@@ -41,51 +41,54 @@ struct BME_STRUCTURE{
     float pressure;
 };
 
-int systemInitializaton();
+struct MEASURING_MODULES{
+    struct BME_STRUCTURE bme280;
+};
+
+int systemInitializaton(struct MEASURING_MODULES* modules);
 
 /* @I2C Declarations*/
 static i2c_bus_handle_t i2cBusHandle = NULL;
-static struct BME_STRUCTURE bme280 = {NULL, 0,0,0};
 i2c_bus_handle_t i2cInit();
 void updateBME(struct BME_STRUCTURE* bme);
 
 void app_main(void){
-    systemInitializaton();
+    char* taskName = pcTaskGetName(NULL);
+    struct MEASURING_MODULES modules = {};
+    if(!systemInitializaton(&modules))
+        ESP_LOGI(taskName, "System initialization successfull");
+
+    else{
+        ESP_LOGW(taskName, "System initialization unsuccessfull");
+        // blah blah blah...
+    }
     while(1){
         vTaskDelay(1000);
     }
 }
 
-int systemInitializaton(){
+int systemInitializaton(struct MEASURING_MODULES* modules){
     char* taskName = pcTaskGetName(NULL);
-    ESP_LOGI(taskName, "Prada Initializaton...");
+    ESP_LOGI(taskName, "Starting Prada Initializaton...");
     enum StatusType status = START;
     gpio_reset_pin(BLINK_LED);
     gpio_set_direction(BLINK_LED, GPIO_MODE_OUTPUT);
     logLEDSequence(taskName, status);
+
+    // >! I2C Initialization
     i2cBusHandle= i2cInit();
     if(i2cBusHandle == NULL){
         ESP_LOGE(taskName, "I2C Initializaton failed...");
         return -1; // Going to handle this more properly later
     }
 
-    // >! BME Initializaton
-    bme280.bmeHandlePtr = bme280_create(i2cBusHandle,
+    // >>! BME Initializaton
+    modules->bme280.bmeHandlePtr = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
-    bme280_default_init(bme280.bmeHandlePtr);
+    bme280_default_init(modules->bme280.bmeHandlePtr);
 
-    while(1){
-        updateBME(&bme280);
-        ESP_LOGI(taskName, "Humidity:%f", bme280.humidity);
-        ESP_LOGI(taskName, "Pressure:%f", bme280.pressure);
-        ESP_LOGI(taskName, "Temperature:%f",bme280.temperature);
-        vTaskDelay(500);
-    }
     return 1;
 }
-
-
-
 
 /* @I2C Definitions */
 // Add proper error handling
@@ -104,7 +107,7 @@ i2c_bus_handle_t i2cInit(){
 }
 
 void updateBME(struct BME_STRUCTURE* bme){
-    /* Error handling is done outside the function */
+    /* Error handling is done (hopefully) outside the function */
     bme280_read_humidity(bme->bmeHandlePtr, &bme->humidity);
     bme280_read_pressure(bme->bmeHandlePtr, &bme->pressure);
     bme280_read_temperature(bme->bmeHandlePtr, &bme->temperature);
