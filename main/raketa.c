@@ -2,7 +2,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-//#include "portmacro.h"
+/* Custom headers */
+#include "misc/blink.h"
+#include "misc/tickConversion.h"
 
 #include "driver/gpio.h"
 
@@ -11,7 +13,7 @@
 #define I2C_MASTER_SCL_IO   (gpio_num_t)15       /*!< gpio number for I2C master clock */
 #define I2C_MASTER_FREQ_HZ  100000               /*!< I2C master clock frequency */
 #define ESP_SLAVE_ADDR      0x28                 /*!< ESP32 slave address, you can set any 7bit value */
-#define DATA_LENGTH         64                   /*!<Data buffer length for test buffer*/
+#define DATA_LENGTH         64                   /*!< Data buffer length for test buffer*/
 
 #include "bme280.h"
 typedef int bme_err_t;
@@ -22,7 +24,6 @@ typedef int bme_err_t;
 
 
 #include "esp_log.h"
-#define BLINK_LED 33
 #define START_BLINK_COUNT 3
 #define END_BLINK_COUNT 5
 #define ERROR_BLINK_COUNT 7
@@ -33,9 +34,6 @@ typedef int bme_err_t;
 
 /* @System declarations*/
 // TODO: Change data types to esp_err_t and ensure errors are handled properly
-enum StatusType{
-    START, END, ERROR, WARNING,SUCCESS
-};
 struct BME_STRUCTURE{
     bme280_handle_t bmeHandlePtr;
     float temperature;
@@ -44,15 +42,12 @@ struct BME_STRUCTURE{
 };
 
 int systemInitializaton();
-TickType_t milliseconds(const int ms);
-void logLEDSequence(const char* taskName, enum StatusType status);
-void blink(const int numOfBlinks);
 
 /* @I2C Declarations*/
 static i2c_bus_handle_t i2cBusHandle = NULL;
 static struct BME_STRUCTURE bme280 = {NULL, 0,0,0};
 i2c_bus_handle_t i2cInit();
-bme_err_t updateBME(struct BME_STRUCTURE* bme);
+void updateBME(struct BME_STRUCTURE* bme);
 
 void app_main(void){
     systemInitializaton();
@@ -73,8 +68,8 @@ int systemInitializaton(){
         ESP_LOGE(taskName, "I2C Initializaton failed...");
         return -1; // Going to handle this more properly later
     }
-    // >! BME Initializaton
 
+    // >! BME Initializaton
     bme280.bmeHandlePtr = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
     bme280_default_init(bme280.bmeHandlePtr);
@@ -89,34 +84,7 @@ int systemInitializaton(){
     return 1;
 }
 
-TickType_t milliseconds(const int ms){
-    return ms/portTICK_PERIOD_MS;
-}
 
-void logLEDSequence(const char* taskName,enum StatusType status){
-    switch (status) {
-        case START:
-            blink(3);
-            break;
-        default:
-            ESP_LOGW(taskName,"Not yet implemented.");
-            break;
-    }
-}
-
-void blink(const int numOfBlinks){
-            gpio_set_level(BLINK_LED, 1);
-            vTaskDelay(milliseconds(1000));
-            gpio_set_level(BLINK_LED, 0);
-            vTaskDelay(milliseconds(1000));
-            for(int i = 0; i < numOfBlinks;i++){
-                gpio_set_level(BLINK_LED, 1);
-                vTaskDelay(milliseconds(200));
-                gpio_set_level(BLINK_LED, 0);
-                vTaskDelay(milliseconds(200));
-            }
-            gpio_set_level(BLINK_LED, 0);
-}
 
 
 /* @I2C Definitions */
@@ -131,14 +99,13 @@ i2c_bus_handle_t i2cInit(){
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = I2C_MASTER_FREQ_HZ,
     };
-    i2c_bus = i2c_bus_create(I2C_NUM_0, &conf);
+    i2c_bus = i2c_bus_create(I2C_NUM_0, &conf); // Returns NULL if failed
     return i2c_bus;
 }
 
-esp_err_t updateBME(struct BME_STRUCTURE* bme){
-    // add error handling later...
-    esp_err_t humidity = bme280_read_humidity(bme->bmeHandlePtr, &bme->humidity);
-    esp_err_t pressure = bme280_read_pressure(bme->bmeHandlePtr, &bme->pressure);
-    esp_err_t temperature = bme280_read_temperature(bme->bmeHandlePtr, &bme->temperature);
-    return BME_OK;
+void updateBME(struct BME_STRUCTURE* bme){
+    /* Error handling is done outside the function */
+    bme280_read_humidity(bme->bmeHandlePtr, &bme->humidity);
+    bme280_read_pressure(bme->bmeHandlePtr, &bme->pressure);
+    bme280_read_temperature(bme->bmeHandlePtr, &bme->temperature);
 }
