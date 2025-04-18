@@ -23,6 +23,11 @@ typedef int bme_err_t;
 #define BME_ERR_PRESSURE 0x2
 #define BME_ERR_TEMPERATURE 0x3
 
+/*
+ * mpu6050.h is using the new i2c driver
+*/
+#include "mpu6050.h"
+
 
 #include "esp_log.h"
 #define START_BLINK_COUNT 3
@@ -36,14 +41,21 @@ typedef int bme_err_t;
 /* @System declarations*/
 // TODO: Change data types to esp_err_t and ensure errors are handled properly
 struct BME_STRUCTURE{
-    bme280_handle_t bmeHandlePtr;
+    bme280_handle_t bmeHandle;
     float temperature;
     float humidity;
     float pressure;
 };
+struct MPU_STRUCTURE{
+    mpu6050_handle_t mpuHandle;
+    mpu6050_acce_value_t acceleration;
+    mpu6050_gyro_value_t gyroscope;
+    mpu6050_temp_value_t temperature;
+};
 
 struct MEASURING_MODULES{
     struct BME_STRUCTURE bme280;
+    struct MPU_STRUCTURE mpu6050;
 };
 
 int systemInitializaton(struct MEASURING_MODULES* modules);
@@ -52,6 +64,7 @@ int systemInitializaton(struct MEASURING_MODULES* modules);
 static i2c_bus_handle_t i2cBusHandle = NULL;
 i2c_bus_handle_t i2cInit();
 void updateBME(struct BME_STRUCTURE* bme);
+void updateMPU(struct MPU_STRUCTURE* mpu);
 
 void app_main(void){
     char* taskName = pcTaskGetName(NULL);
@@ -64,9 +77,20 @@ void app_main(void){
     }
     while(1){
         updateBME(&modules.bme280);
-        ESP_LOGI(taskName, "Temperature: %f", modules.bme280.temperature);
-        ESP_LOGI(taskName, "Humidity: %f", modules.bme280.humidity);
-        ESP_LOGI(taskName, "Pressure: %f", modules.bme280.pressure);
+        updateMPU(&modules.mpu6050);
+        ESP_LOGI(taskName, "BME: Temperature: %f", modules.bme280.temperature);
+        ESP_LOGI(taskName, "BME: Humidity: %f", modules.bme280.humidity);
+        ESP_LOGI(taskName, "BME: Pressure: %f", modules.bme280.pressure);
+
+        ESP_LOGI(taskName, "MPU: Temperature: %f", modules.mpu6050.temperature.temp);
+        ESP_LOGI(taskName, "MPU: acc_x: %f\tacc_y: %f\tacc_z: %f",
+                modules.mpu6050.acceleration.acce_x,
+                modules.mpu6050.acceleration.acce_y,
+                modules.mpu6050.acceleration.acce_z);
+        ESP_LOGI(taskName, "MPU: gyro_x: %f\tgyro_y: %f\tgyro_z: %f",
+                modules.mpu6050.gyroscope.gyro_x,
+                modules.mpu6050.gyroscope.gyro_y,
+                modules.mpu6050.gyroscope.gyro_z);
         vTaskDelay(seconds(1));
     }
 }
@@ -86,10 +110,17 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
         return -1; // Going to handle this more properly later
     }
 
-    // >>! BME Initializaton
-    modules->bme280.bmeHandlePtr = bme280_create(i2cBusHandle,
+    // >>! BME280 Initializaton
+    modules->bme280.bmeHandle = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
-    bme280_default_init(modules->bme280.bmeHandlePtr);
+    bme280_default_init(modules->bme280.bmeHandle);
+
+
+    // >>! MPU6050 Initialization
+    modules->mpu6050.mpuHandle = mpu6050_create(i2cBusHandle, MPU6050_I2C_ADDRESS);
+    mpu6050_config(modules->mpu6050.mpuHandle, ACCE_FS_4G, GYRO_FS_500DPS);
+    mpu6050_wake_up(modules->mpu6050.mpuHandle);
+
 
     return 1;
 }
@@ -112,7 +143,14 @@ i2c_bus_handle_t i2cInit(){
 
 void updateBME(struct BME_STRUCTURE* bme){
     /* Error handling is done (hopefully) outside the function */
-    bme280_read_humidity(bme->bmeHandlePtr, &bme->humidity);
-    bme280_read_pressure(bme->bmeHandlePtr, &bme->pressure);
-    bme280_read_temperature(bme->bmeHandlePtr, &bme->temperature);
+    bme280_read_humidity(bme->bmeHandle, &bme->humidity);
+    bme280_read_pressure(bme->bmeHandle, &bme->pressure);
+    bme280_read_temperature(bme->bmeHandle, &bme->temperature);
 }
+
+void updateMPU(struct MPU_STRUCTURE* mpu){
+    mpu6050_get_acce(mpu->mpuHandle, &mpu->acceleration);
+    mpu6050_get_gyro(mpu->mpuHandle, &mpu->gyroscope);
+    mpu6050_get_temp(mpu->mpuHandle, &mpu->temperature);
+}
+
