@@ -17,4 +17,4 @@ dependencies:
   espressif/cmake_utilities: 0.*
   espressif/bme280: =*
   espressif/i2c_bus: =*
-  espressif/mpu6050: ^1.1.1
+  maucke/mpu6050: ^1.1.1
