@@ -6,6 +6,7 @@
 #include "misc/blink.h"
 #include "misc/tickConversion.h"
 
+
 #include "driver/gpio.h"
 
 #include "i2c_bus.h"
@@ -55,15 +56,18 @@ void updateBME(struct BME_STRUCTURE* bme);
 void app_main(void){
     char* taskName = pcTaskGetName(NULL);
     struct MEASURING_MODULES modules = {};
-    if(!systemInitializaton(&modules))
+    if(systemInitializaton(&modules) == 1)
         ESP_LOGI(taskName, "System initialization successfull");
-
     else{
         ESP_LOGW(taskName, "System initialization unsuccessfull");
         // blah blah blah...
     }
     while(1){
-        vTaskDelay(1000);
+        updateBME(&modules.bme280);
+        ESP_LOGI(taskName, "Temperature: %f", modules.bme280.temperature);
+        ESP_LOGI(taskName, "Humidity: %f", modules.bme280.humidity);
+        ESP_LOGI(taskName, "Pressure: %f", modules.bme280.pressure);
+        vTaskDelay(seconds(1));
     }
 }
 
@@ -76,7 +80,7 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
     logLEDSequence(taskName, status);
 
     // >! I2C Initialization
-    i2cBusHandle= i2cInit();
+    i2cBusHandle = i2cInit();
     if(i2cBusHandle == NULL){
         ESP_LOGE(taskName, "I2C Initializaton failed...");
         return -1; // Going to handle this more properly later
