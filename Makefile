@@ -1904,6 +1904,19 @@ __idf_espressif__bme280/fast:
 .PHONY : __idf_espressif__bme280/fast
 
 #=============================================================================
+# Target rules for targets named __idf_espressif__esp32-camera
+
+# Build rule for target.
+__idf_espressif__esp32-camera: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __idf_espressif__esp32-camera
+.PHONY : __idf_espressif__esp32-camera
+
+# fast build rule for target.
+__idf_espressif__esp32-camera/fast:
+	$(MAKE) $(MAKESILENT) -f esp-idf/espressif__esp32-camera/CMakeFiles/__idf_espressif__esp32-camera.dir/build.make esp-idf/espressif__esp32-camera/CMakeFiles/__idf_espressif__esp32-camera.dir/build
+.PHONY : __idf_espressif__esp32-camera/fast
+
+#=============================================================================
 # Target rules for targets named __idf_maucke__mpu6050
 
 # Build rule for target.
@@ -2063,6 +2076,7 @@ help:
 	@echo "... __idf_esp_wifi"
 	@echo "... __idf_espcoredump"
 	@echo "... __idf_espressif__bme280"
+	@echo "... __idf_espressif__esp32-camera"
 	@echo "... __idf_espressif__i2c_bus"
 	@echo "... __idf_fatfs"
 	@echo "... __idf_freertos"
