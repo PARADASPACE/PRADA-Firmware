@@ -118,6 +118,7 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
     err = mpu6050_wake_up(modules->mpu6050.mpuHandle);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
 
+    vTaskDelay(milliseconds(500));
 
     return 1;
 }
@@ -143,16 +144,21 @@ void updateBME(struct BME_STRUCTURE* bme){
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Failed to read the humidity.");
     err = bme280_read_pressure(bme->bmeHandle, &bme->pressure);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Failed to read the pressure.");
+    vTaskDelay(milliseconds(100));
     err = bme280_read_temperature(bme->bmeHandle, &bme->temperature);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Failed to read the temperature.");
+    vTaskDelay(milliseconds(100));
 }
 
 void updateMPU(struct MPU_STRUCTURE* mpu){
     err = mpu6050_get_acce(mpu->mpuHandle, &mpu->acceleration);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Failed to read the acceleration.");
+    vTaskDelay(milliseconds(100));
     err = mpu6050_get_gyro(mpu->mpuHandle, &mpu->gyroscope);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Failed to read the gyroscope.");
+    vTaskDelay(milliseconds(100));
     err = mpu6050_get_temp(mpu->mpuHandle, &mpu->temperature);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Failed to read the temperature.");
+    vTaskDelay(milliseconds(100));
 }
 
