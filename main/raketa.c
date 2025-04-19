@@ -117,7 +117,8 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
 
 
     // >>! MPU6050 Initialization
-    modules->mpu6050.mpuHandle = mpu6050_create(i2cBusHandle, MPU6050_I2C_ADDRESS);
+    modules->mpu6050.mpuHandle = mpu6050_create(i2cBusHandle,
+                                                MPU6050_I2C_ADDRESS);
     mpu6050_config(modules->mpu6050.mpuHandle, ACCE_FS_4G, GYRO_FS_500DPS);
     mpu6050_wake_up(modules->mpu6050.mpuHandle);
 
