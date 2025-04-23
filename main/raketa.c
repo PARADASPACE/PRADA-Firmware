@@ -1,6 +1,7 @@
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "hal/uart_types.h"
 #include "unity.h"
 
 /* Custom headers */
@@ -9,6 +10,7 @@
 
 #include "driver/gpio.h"
 #include "i2c_bus.h"
+#include "driver/uart.h"
 #define I2C_MASTER_SDA_IO   (gpio_num_t)14       /*!< gpio number for I2C master data  */
 #define I2C_MASTER_SCL_IO   (gpio_num_t)15       /*!< gpio number for I2C master clock */
 #define I2C_MASTER_FREQ_HZ  100000               /*!< I2C master clock frequency */
@@ -60,8 +62,13 @@ i2c_bus_handle_t i2cInit();
 void updateBME(struct BME_STRUCTURE* bme);
 void updateMPU(struct MPU_STRUCTURE* mpu);
 
-static esp_err_t err;
+/* @UART Declarations */
+void UARTInit();
+/* @GPS Declarations */
+void gps_get();
 
+
+static esp_err_t err;
 void app_main(void){
     char* taskName = pcTaskGetName(NULL);
     struct MEASURING_MODULES modules = {};
@@ -78,7 +85,8 @@ void app_main(void){
         ESP_LOGI(taskName, "BME: Humidity: %f", modules.bme280.humidity);
         ESP_LOGI(taskName, "BME: Pressure: %f", modules.bme280.pressure);
 
-        ESP_LOGI(taskName, "MPU: Temperature: %f", modules.mpu6050.temperature.temp);
+        ESP_LOGI(taskName, "MPU: Temperature: %f",
+                modules.mpu6050.temperature.temp);
         ESP_LOGI(taskName, "MPU: acc_x: %f\tacc_y: %f\tacc_z: %f",
                 modules.mpu6050.acceleration.acce_x,
                 modules.mpu6050.acceleration.acce_y,
@@ -101,24 +109,29 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
 
     // >! I2C Initialization
     i2cBusHandle = i2cInit();
-    TEST_ASSERT_NOT_NULL_MESSAGE(i2cInit(), "I2C Initialization failed.");
+    TEST_ASSERT_NOT_NULL_MESSAGE(i2cInit(),
+            "I2C Initialization failed.");
     // >>! BME280 Initializaton
     modules->bme280.bmeHandle = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
-    TEST_ASSERT_NOT_NULL_MESSAGE(modules->bme280.bmeHandle, "BME280 Handle is NULL.");
+    TEST_ASSERT_NOT_NULL_MESSAGE(modules->bme280.bmeHandle,
+            "BME280 Handle is NULL.");
     err = bme280_default_init(modules->bme280.bmeHandle);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Default initialization failed.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "BME280 Default initialization failed.");
 
     // >>! MPU6050 Initialization
     modules->mpu6050.mpuHandle = mpu6050_create(i2cBusHandle,
                                                 MPU6050_I2C_ADDRESS);
-    TEST_ASSERT_NOT_NULL_MESSAGE(modules->mpu6050.mpuHandle, "MPU6050 Handle is NULL.");
-    err = mpu6050_config(modules->mpu6050.mpuHandle, ACCE_FS_4G, GYRO_FS_500DPS);
+    TEST_ASSERT_NOT_NULL_MESSAGE(modules->mpu6050.mpuHandle,
+            "MPU6050 Handle is NULL.");
+    err = mpu6050_config(modules->mpu6050.mpuHandle,
+            ACCE_FS_4G, GYRO_FS_500DPS);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Config failed.");
     err = mpu6050_wake_up(modules->mpu6050.mpuHandle);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
 
-    vTaskDelay(milliseconds(500));
+    vTaskDelay(milliseconds(600));
 
     return 1;
 }
@@ -141,24 +154,52 @@ i2c_bus_handle_t i2cInit(){
 
 void updateBME(struct BME_STRUCTURE* bme){
     err = bme280_read_humidity(bme->bmeHandle, &bme->humidity);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Failed to read the humidity.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "BME280 Failed to read the humidity.");
+    vTaskDelay(milliseconds(100));
     err = bme280_read_pressure(bme->bmeHandle, &bme->pressure);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Failed to read the pressure.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "BME280 Failed to read the pressure.");
     vTaskDelay(milliseconds(100));
     err = bme280_read_temperature(bme->bmeHandle, &bme->temperature);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "BME280 Failed to read the temperature.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "BME280 Failed to read the temperature.");
     vTaskDelay(milliseconds(100));
 }
 
 void updateMPU(struct MPU_STRUCTURE* mpu){
     err = mpu6050_get_acce(mpu->mpuHandle, &mpu->acceleration);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Failed to read the acceleration.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "MPU6050 Failed to read the acceleration.");
     vTaskDelay(milliseconds(100));
     err = mpu6050_get_gyro(mpu->mpuHandle, &mpu->gyroscope);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Failed to read the gyroscope.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "MPU6050 Failed to read the gyroscope.");
     vTaskDelay(milliseconds(100));
     err = mpu6050_get_temp(mpu->mpuHandle, &mpu->temperature);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Failed to read the temperature.");
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "MPU6050 Failed to read the temperature.");
     vTaskDelay(milliseconds(100));
+}
+
+void UARTInit(){
+    const int uart_buffer_size = (1024 * 2);
+    QueueHandle_t uart_queue;
+    ESP_ERROR_CHECK(uart_driver_install(UART_NUM_2, uart_buffer_size, 0, 10,
+                &uart_queue, 0));
+    const uart_port_t uart_num = UART_NUM_2;
+    uart_config_t uart_config = {
+        .baud_rate = 9600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_CTS,
+        .rx_flow_ctrl_thresh = 122,
+    };
+    ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
+    // Hnusne to napisu vsechno tady a ve skole to prepisu at to je hezci >:(
+
+    ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2, 2, -1, -1, -1));
+    // pokracovat ve cteni https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/uart.html
 }
 
