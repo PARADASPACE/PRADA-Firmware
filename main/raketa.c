@@ -3,6 +3,7 @@
 #include "freertos/task.h"
 #include "hal/uart_types.h"
 #include "unity.h"
+#include "memory.h"
 
 /* Custom headers */
 #include "misc/blink.h"
@@ -16,6 +17,8 @@
 #define I2C_MASTER_FREQ_HZ  100000               /*!< I2C master clock frequency */
 #define ESP_SLAVE_ADDR      0x28                 /*!< ESP32 slave address, you can set any 7bit value */
 #define DATA_LENGTH         64                   /*!< Data buffer length for test buffer*/
+#define BUFFER_LENGTH 1024
+#define UART_NUM UART_NUM_1
 
 
 #include "bme280.h"
@@ -52,6 +55,7 @@ struct MPU_STRUCTURE{
 struct MEASURING_MODULES{
     struct BME_STRUCTURE bme280;
     struct MPU_STRUCTURE mpu6050;
+    char gpsBuffer[BUFFER_LENGTH];
 };
 
 int systemInitializaton(struct MEASURING_MODULES* modules);
@@ -62,10 +66,9 @@ i2c_bus_handle_t i2cInit();
 void updateBME(struct BME_STRUCTURE* bme);
 void updateMPU(struct MPU_STRUCTURE* mpu);
 
-/* @UART Declarations */
-void UARTInit();
 /* @GPS Declarations */
-void gps_get();
+void gpsInit(char* gpsBuffer);
+void gpsUpdate(char* gpsBuffer);
 
 
 static esp_err_t err;
@@ -95,6 +98,8 @@ void app_main(void){
                 modules.mpu6050.gyroscope.gyro_x,
                 modules.mpu6050.gyroscope.gyro_y,
                 modules.mpu6050.gyroscope.gyro_z);
+        gpsUpdate(modules.gpsBuffer);
+        ESP_LOGI(taskName, "GPS: %s", modules.gpsBuffer);
         vTaskDelay(seconds(1));
     }
 }
@@ -131,6 +136,8 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
     err = mpu6050_wake_up(modules->mpu6050.mpuHandle);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
 
+    // >! GPS Initialization
+    gpsInit(modules->gpsBuffer);
     vTaskDelay(milliseconds(600));
 
     return 1;
@@ -182,24 +189,23 @@ void updateMPU(struct MPU_STRUCTURE* mpu){
     vTaskDelay(milliseconds(100));
 }
 
-void UARTInit(){
-    const int uart_buffer_size = (1024 * 2);
-    QueueHandle_t uart_queue;
-    ESP_ERROR_CHECK(uart_driver_install(UART_NUM_2, uart_buffer_size, 0, 10,
-                &uart_queue, 0));
-    const uart_port_t uart_num = UART_NUM_2;
-    uart_config_t uart_config = {
-        .baud_rate = 9600,
+void gpsInit(char* gpsBuffer){
+    uart_config_t uartConfig = {
+        .baud_rate= 9600,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_CTS,
-        .rx_flow_ctrl_thresh = 122,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     };
-    ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    // Hnusne to napisu vsechno tady a ve skole to prepisu at to je hezci >:(
-
-    ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2, 2, -1, -1, -1));
-    // pokracovat ve cteni https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/uart.html
+    ESP_ERROR_CHECK(uart_param_config(UART_NUM, &uartConfig));
+    ESP_ERROR_CHECK(uart_set_pin(UART_NUM, UART_PIN_NO_CHANGE, 12, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUFFER_LENGTH, 0, 0, NULL, 0));
+    vTaskDelay(seconds(1));
 }
-
+void gpsUpdate(char* gpsBuffer){
+    memset(gpsBuffer, 0, BUFFER_LENGTH);
+    int rxLen = uart_read_bytes(UART_NUM, (uint8_t*)gpsBuffer, BUFFER_LENGTH-1, portMAX_DELAY);
+    if(rxLen > 0){
+        gpsBuffer[rxLen] = '\0';
+    }
+}
