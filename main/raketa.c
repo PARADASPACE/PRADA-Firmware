@@ -198,14 +198,27 @@ void gpsInit(char* gpsBuffer){
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     };
     ESP_ERROR_CHECK(uart_param_config(UART_NUM, &uartConfig));
-    ESP_ERROR_CHECK(uart_set_pin(UART_NUM, UART_PIN_NO_CHANGE, 12, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-    ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUFFER_LENGTH, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_set_pin(UART_NUM, UART_PIN_NO_CHANGE, 12,
+                UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUFFER_LENGTH * 2,
+                0, 0, NULL, 0));
     vTaskDelay(seconds(1));
 }
-void gpsUpdate(char* gpsBuffer){
+void gpsUpdate(char* gpsBuffer) {
     memset(gpsBuffer, 0, BUFFER_LENGTH);
-    int rxLen = uart_read_bytes(UART_NUM, (uint8_t*)gpsBuffer, BUFFER_LENGTH-1, portMAX_DELAY);
-    if(rxLen > 0){
-        gpsBuffer[rxLen] = '\0';
+    int idx = 0;
+    while (idx < BUFFER_LENGTH - 1) {
+        uint8_t byte;
+        int len = uart_read_bytes(UART_NUM, &byte, 1, pdMS_TO_TICKS(100));  // Wait 100ms for a byte
+        if (len > 0) {
+            gpsBuffer[idx++] = byte;
+            if (byte == '\n') {
+                gpsBuffer[idx] = '\0';
+                return;
+            }
+        } else {
+            break;
+        }
     }
+    strcpy(gpsBuffer, "No full GPS sentence received.");
 }
