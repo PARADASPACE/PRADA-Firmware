@@ -16,7 +16,6 @@
 #include "hal/uart_types.h"
 #include "i2c_bus.h"
 
-#include "bme280.h"
 
 /* Custom headers */
 #include "misc/blink.h"
@@ -58,6 +57,7 @@ i2c_bus_handle_t i2cInit();
 spi_device_handle_t spiInit();
 
 /* @BME */
+#include "bme280.h"
 struct BME_STRUCTURE{
     bme280_handle_t bmeHandle;
     float temperature;
