@@ -1,72 +1,82 @@
-#include "esp_err.h"
+// This is the source code for a rocket build by the PARADASPACE team. It's purpose is to measure and provide
+// useful data and emulate real life scenarios.
 #include "freertos/FreeRTOS.h"
+
 #include "freertos/task.h"
-#include "hal/uart_types.h"
-#include "unity.h"
 #include "memory.h"
+
+#include "esp_log.h"
+#include "esp_err.h"
+#include "unity.h"
+
+#include <driver/spi_common.h>
+#include <driver/spi_master.h>
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "hal/uart_types.h"
+#include "i2c_bus.h"
+
+#include "bme280.h"
 
 /* Custom headers */
 #include "misc/blink.h"
 #include "misc/tickConversion.h"
 
-#include "driver/gpio.h"
-#include "i2c_bus.h"
-#include "driver/uart.h"
 
 
-#define I2C_MASTER_SDA_IO   (gpio_num_t)14       /*!< gpio number for I2C master data  */
-#define I2C_MASTER_SCL_IO   (gpio_num_t)15       /*!< gpio number for I2C master clock */
-#define I2C_MASTER_FREQ_HZ  100000               /*!< I2C master clock frequency */
-#define ESP_SLAVE_ADDR      0x28                 /*!< ESP32 slave address, you can set any 7bit value */
-#define DATA_LENGTH         64                   /*!< Data buffer length for test buffer*/
+#define I2C_MASTER_SDA_IO   (gpio_num_t)14
+#define I2C_MASTER_SCL_IO   (gpio_num_t)15
+#define I2C_MASTER_FREQ_HZ  100000
+//#define ESP_SLAVE_ADDR      0x28
+#define DATA_LENGTH         64
 #define BUFFER_LENGTH 1024
 #define UART_NUM UART_NUM_1
 
+/* !< SPI definitions */
+#define SCK 5
+#define MISO 19
+#define MOSI 27
+#define SS 18
+#define DIO0 26
+#define RST 23
 
-#include "bme280.h"
-/*
- * mpu6050.h is using the new i2c driver
-*/
-#include "mpu6050.h"
 
 
-#include "esp_log.h"
 #define START_BLINK_COUNT 3
 #define END_BLINK_COUNT 5
 #define ERROR_BLINK_COUNT 7
 #define WARNING_BLINK_COUNT 2
 #define SUCCESS_BLINK_COUNT 1
 
-/*
- * Lora sx1278-smt definitions and functions
-*/
 
-/* @System structures*/
+
+/* @I2C */
+static i2c_bus_handle_t i2cBusHandle = NULL;
+i2c_bus_handle_t i2cInit();
+
+/* @SPI */
+spi_device_handle_t spiInit();
+
+/* @BME */
 struct BME_STRUCTURE{
     bme280_handle_t bmeHandle;
     float temperature;
     float humidity;
     float pressure;
 };
+void updateBME(struct BME_STRUCTURE* bme);
+
+/* @MPU */
+/*
+ * mpu6050.h is using the new i2c driver!
+*/
+#include "mpu6050.h"
 struct MPU_STRUCTURE{
     mpu6050_handle_t mpuHandle;
     mpu6050_acce_value_t acceleration;
     mpu6050_gyro_value_t gyroscope;
     mpu6050_temp_value_t temperature;
 };
-
-struct MEASURING_MODULES{
-    struct BME_STRUCTURE bme280;
-    struct MPU_STRUCTURE mpu6050;
-    char gpsBuffer[BUFFER_LENGTH];
-};
-
-int systemInitializaton(struct MEASURING_MODULES* modules);
-
-/* @I2C */
-static i2c_bus_handle_t i2cBusHandle = NULL;
-i2c_bus_handle_t i2cInit();
-void updateBME(struct BME_STRUCTURE* bme);
 void updateMPU(struct MPU_STRUCTURE* mpu);
 
 /* @GPS */
@@ -75,18 +85,8 @@ void gpsUpdate(char* gpsBuffer);
 
 
 /* @LORA */
-#include <driver/spi_master.h>
 #include <esp_intr_alloc.h>
 #include <sx127x.h>
-#include <driver/spi_common.h>
-#include <driver/spi_master.h>
-
-#define SCK 5
-#define MISO 19
-#define MOSI 27
-#define SS 18
-#define DIO0 26
-#define RST 23
 
 sx127x device;
 int total_packets_received = 0;
@@ -96,9 +96,9 @@ static const char *TAG = "esp_utils";
 void (*global_tx_callback)(sx127x *device);
 // breakpoint
 int current_power_level = 11;
-
-spi_device_handle_t loraInit();
 void loraTx(sx127x *device);
+
+// >! esp_utils.h
 void setup_gpio_interrupts(gpio_num_t gpio, sx127x *device, gpio_int_type_t type);
 void sx127x_reset();
 void sx127x_init_spi(spi_device_handle_t *handle);
@@ -108,8 +108,16 @@ void handle_interrupt_task(void *arg);
 void IRAM_ATTR handle_interrupt_fromisr(void *arg);
 void handle_interrupt_tx_task(void *arg);
 
+/* @Structure to tx*/
+struct MEASURING_MODULES{
+    struct BME_STRUCTURE bme280;
+    struct MPU_STRUCTURE mpu6050;
+    char gpsBuffer[BUFFER_LENGTH];
+};
+int systemInitializaton(struct MEASURING_MODULES* modules);
 
 static esp_err_t err;
+/* @TaskNames */
 static const char *sxTag = "sx127x";
 void app_main(void){
     char* taskName = pcTaskGetName(NULL);
