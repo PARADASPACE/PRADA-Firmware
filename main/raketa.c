@@ -19,7 +19,6 @@
 
 
 /* Custom headers */
-#include "misc/blink.h"
 #include "misc/tickConversion.h"
 
 
@@ -41,12 +40,6 @@
 #define RST 23
 
 
-
-#define START_BLINK_COUNT 3
-#define END_BLINK_COUNT 5
-#define ERROR_BLINK_COUNT 7
-#define WARNING_BLINK_COUNT 2
-#define SUCCESS_BLINK_COUNT 1
 
 
 
@@ -90,6 +83,19 @@ void gpsUpdate(void);
 #include "lora.h"
 void taskTx(void *pvParameters);
 
+/* @SYSTEM OUTPUT */
+#define START 0x1
+#define END 0x2
+#define ERROR 0x3
+#define WARNING 0x4
+#define SUCCESS 0x5
+
+#define LED_GREEN (1<<1) // GPIO2
+#define LED_RED (1<<2) // GPIO4
+#define BLINK_LED 33
+
+void logLEDSequence(const char* taskName, const uint8_t status);
+void blink(uint8_t led);
 
 /* @Structure to tx*/
 struct MEASURING_MODULES{
@@ -161,10 +167,13 @@ void app_main(void){
 int systemInitializaton(struct MEASURING_MODULES* modules){
     char* sysInitTask = "System Initialization";
     ESP_LOGI(sysInitTask , "Starting Prada Initializaton...");
-    enum StatusType status = START;
     gpio_reset_pin(BLINK_LED);
+    gpio_reset_pin(LED_RED);
+    gpio_reset_pin(LED_GREEN);
     gpio_set_direction(BLINK_LED, GPIO_MODE_OUTPUT);
-    logLEDSequence(sysInitTask, status);
+    gpio_set_direction(LED_GREEN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_RED, GPIO_MODE_OUTPUT);
+    logLEDSequence(sysInitTask, START);
 
     // >! Initialize lora module
     // >! I2C Initialization
@@ -298,4 +307,61 @@ void gpsUpdate(void){
     memset(tempBuf, 0, GPS_BUFFER);
     uart_read_bytes(UART_NUM_2, tempBuf, GPS_BUFFER, portMAX_DELAY);
     ESP_LOGI(gpsTag, "%s", tempBuf);
+}
+
+void logLEDSequence(const char* taskName,const uint8_t status){
+    switch (status) {
+        case START:
+            blink(LED_GREEN);
+            blink(LED_RED);
+            blink(BLINK_LED);
+            break;
+        case END:
+            for(int i = 0; i < 5; i++)
+                blink(LED_GREEN|LED_RED);
+            break;
+        case ERROR:
+            for(int i = 0; i < 3; i++)
+                blink(LED_RED);
+            break;
+        case WARNING:
+            for(int i = 0; i < 3; i++)
+                blink(LED_RED|LED_GREEN);
+            break;
+        case SUCCESS:
+            for(int i = 0; i < 3; i++)
+                blink(LED_RED);
+            break;
+        default:
+            ESP_LOGW(taskName,"Not yet implemented.");
+            break;
+    }
+}
+
+void blink(uint8_t led){
+            switch(led){
+                case LED_GREEN:
+                    gpio_set_level(LED_GREEN, 1);
+                    vTaskDelay(milliseconds(100));
+                    gpio_set_level(LED_GREEN, 0);
+                    break;
+                case LED_RED:
+                    gpio_set_level(LED_RED, 1);
+                    vTaskDelay(milliseconds(100));
+                    gpio_set_level(LED_RED, 0);
+                    break;
+                case LED_GREEN|LED_RED:
+                    gpio_set_level(LED_RED, 1);
+                    gpio_set_level(LED_GREEN, 1);
+                    vTaskDelay(milliseconds(100));
+                    gpio_set_level(LED_GREEN, 0);
+                    gpio_set_level(LED_RED, 0);
+                    break;
+                case BLINK_LED:
+                    gpio_set_level(BLINK_LED, 1);
+                    vTaskDelay(milliseconds(100));
+                    gpio_set_level(BLINK_LED, 0);
+                default:
+                    break;
+            }
 }
