@@ -1,3 +1,19 @@
+/*
+                                                                       ███
+                                                                      ███
+                                                                     ███
+
+   ████████████████████████████████████    ███████████████    █████████████████ ████████████       █████████████████       █████████
+    █                  █             ███    █           ███    █            ████         █████      █            ████    █████████████
+  ███           ███  ███             ███  ███           ███  ███            ████            ███   ███             ███   ███████████████
+  ███           ███  ███             ███  ███           ███  ███            ████             ███  ███             ███   █  █   █   █  █
+  █████████████████  ███ ███████████████  █████████████████  ███████████████████             ███  ███████████████████    █  █  █  █  █
+  ████████████████   ███  ██████████████  ████████████████   ███  ██████████████             ███  ███  ██████████████     █ █  █ █  █
+  ███                ███             ███  ███    █████       ███            ████            ███   ███             ███      █ █ █ ███
+  ███                ███             ███  ███      █████     ███            ████         █████    ███             ███       ██████
+  ███                ███             ███  ███        ████    ███            ████████████████      ███             ███         ███
+                                                                                                                               █
+*/
 // This is the source code for a rocket build by the PARADASPACE team.
 // It's purpose is to measure and provide
 // useful data and emulate real life scenarios.
@@ -92,10 +108,17 @@ void taskTx(void *pvParameters);
 
 #define LED_GREEN (1<<1) // GPIO2
 #define LED_RED (1<<2) // GPIO4
-#define BLINK_LED 33
-
+#define LED_BUILTIN 33
+typedef struct{
+    uint8_t led;
+    uint8_t count;
+    uint16_t duration;
+} led_cmd_t;
+#define LED_QUEUE_LEN 10
+QueueHandle_t ledQueue;
 void logLEDSequence(const char* taskName, const uint8_t status);
 void blink(uint8_t led);
+void ledTask(void *pvParameters);
 
 /* @Structure to tx*/
 struct MEASURING_MODULES{
@@ -111,7 +134,6 @@ void espHandleError(const char* tag, esp_err_t err);
 
 static esp_err_t err;
 /* @TaskNames */
-static const char *utilsTag = "esp_utils";
 static const char *sxTag = "sx127x";
 static const char* bmeTag = "BME280";
 static const char* mpuTag = "MPU6050";
@@ -120,14 +142,6 @@ static const char* loraTag = "LORA";
 
 void app_main(void){
     char* mainTask = "Main";
-    ESP_LOGI(mainTask, "BEFORE GPS.");
-    gpsInit();
-    ESP_LOGI(mainTask, "AFTER INIT.");
-    while(1){
-        ESP_LOGI(mainTask, "GPS UPDATEL:::::::.");
-        gpsUpdate();
-        vTaskDelay(milliseconds(1000));
-    }
     struct MEASURING_MODULES modules = {};
 
     if(systemInitializaton(&modules) == 1)
@@ -167,19 +181,23 @@ void app_main(void){
 int systemInitializaton(struct MEASURING_MODULES* modules){
     char* sysInitTask = "System Initialization";
     ESP_LOGI(sysInitTask , "Starting Prada Initializaton...");
-    gpio_reset_pin(BLINK_LED);
+    gpio_reset_pin(LED_BUILTIN);
     gpio_reset_pin(LED_RED);
     gpio_reset_pin(LED_GREEN);
-    gpio_set_direction(BLINK_LED, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_BUILTIN, GPIO_MODE_OUTPUT);
     gpio_set_direction(LED_GREEN, GPIO_MODE_OUTPUT);
     gpio_set_direction(LED_RED, GPIO_MODE_OUTPUT);
-    logLEDSequence(sysInitTask, START);
+    ledQueue= xQueueCreate(LED_QUEUE_LEN, sizeof(led_cmd_t));
+    xTaskCreate(ledTask, "LED_CONTROLLER", 2048, NULL, 10, NULL);
+    logLEDSequence(sysInitTask, SUCCESS);
 
-    // >! Initialize lora module
+
     // >! I2C Initialization
     i2cBusHandle = i2cInit();
     TEST_ASSERT_NOT_NULL_MESSAGE(i2cInit(),
             "I2C Initialization failed.");
+    // >! GPS Initialization
+    gpsInit();
     // >>! BME280 Initializaton
     modules->bme280.bmeHandle = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
@@ -200,8 +218,6 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
     err = mpu6050_wake_up(modules->mpu6050.mpuHandle);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
 
-    // >! GPS Initialization
-    vTaskDelay(milliseconds(600));
 
     return 1;
 }
@@ -276,8 +292,10 @@ void taskTx(void *pvParameters){
                 modules->mpu6050.gyroscope.gyro_x,
                 modules->mpu6050.gyroscope.gyro_y,
                 modules->mpu6050.gyroscope.gyro_z);
-        lora_send_packet((uint8_t*)pvParameters, sizeof(struct MEASURING_MODULES));
-        ESP_LOGI(loraTag, "%d byte packet sent...", sizeof(struct MEASURING_MODULES));
+        lora_send_packet((uint8_t*)pvParameters,
+                sizeof(struct MEASURING_MODULES));
+        ESP_LOGI(loraTag, "%d byte packet sent...",
+                sizeof(struct MEASURING_MODULES));
         int lost = lora_packet_lost();
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
@@ -297,7 +315,8 @@ void gpsInit(void){
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     };
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, UART_PIN_NO_CHANGE, 12, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_set_pin(uart_num, UART_PIN_NO_CHANGE, 12,
+                UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_driver_install(uart_num, GPS_BUFFER, 0, 0, NULL, 0));
 }
 
@@ -309,59 +328,70 @@ void gpsUpdate(void){
     ESP_LOGI(gpsTag, "%s", tempBuf);
 }
 
-void logLEDSequence(const char* taskName,const uint8_t status){
+void logLEDSequence(const char* taskName, const uint8_t status) {
+    led_cmd_t cmd = {0};
+
     switch (status) {
         case START:
-            blink(LED_GREEN);
-            blink(LED_RED);
-            blink(BLINK_LED);
+            cmd.led = LED_GREEN;
+            cmd.count = 1;
+            cmd.duration = 100;
+            xQueueSend(ledQueue, &cmd, 0);
+
+            cmd.led= LED_RED;
+            xQueueSend(ledQueue, &cmd, 0);
+
+            cmd.led = LED_GREEN | LED_RED;
+            xQueueSend(ledQueue, &cmd, 0);
+
+            cmd.led = LED_BUILTIN;
+            xQueueSend(ledQueue, &cmd, 0);
             break;
+
         case END:
-            for(int i = 0; i < 5; i++)
-                blink(LED_GREEN|LED_RED);
-            break;
-        case ERROR:
-            for(int i = 0; i < 3; i++)
-                blink(LED_RED);
+            cmd.led = LED_RED;
+            cmd.count = 3;
+            cmd.duration = 100;
+            xQueueSend(ledQueue, &cmd, 0);
             break;
         case WARNING:
-            for(int i = 0; i < 3; i++)
-                blink(LED_RED|LED_GREEN);
+            cmd.led = LED_GREEN | LED_RED;
+            cmd.count = 5;
+            cmd.duration = 100;
+            xQueueSend(ledQueue, &cmd, 0);
             break;
+
+        case ERROR:
         case SUCCESS:
-            for(int i = 0; i < 3; i++)
-                blink(LED_RED);
+            cmd.led = LED_GREEN;
+            cmd.count = 3;
+            cmd.duration = 100;
+            xQueueSend(ledQueue, &cmd, 0);
             break;
+
         default:
-            ESP_LOGW(taskName,"Not yet implemented.");
+            ESP_LOGW(taskName, "Not yet implemented.");
             break;
     }
 }
+void ledTask(void *pvParameters){
+    led_cmd_t cmd;
 
-void blink(uint8_t led){
-            switch(led){
-                case LED_GREEN:
-                    gpio_set_level(LED_GREEN, 1);
-                    vTaskDelay(milliseconds(100));
-                    gpio_set_level(LED_GREEN, 0);
-                    break;
-                case LED_RED:
-                    gpio_set_level(LED_RED, 1);
-                    vTaskDelay(milliseconds(100));
-                    gpio_set_level(LED_RED, 0);
-                    break;
-                case LED_GREEN|LED_RED:
-                    gpio_set_level(LED_RED, 1);
-                    gpio_set_level(LED_GREEN, 1);
-                    vTaskDelay(milliseconds(100));
-                    gpio_set_level(LED_GREEN, 0);
-                    gpio_set_level(LED_RED, 0);
-                    break;
-                case BLINK_LED:
-                    gpio_set_level(BLINK_LED, 1);
-                    vTaskDelay(milliseconds(100));
-                    gpio_set_level(BLINK_LED, 0);
-                default:
-                    break;
+    while (1) {
+        if (xQueueReceive(ledQueue, &cmd, portMAX_DELAY)) {
+            for (int i = 0; i < cmd.count; ++i) {
+                if (cmd.led & LED_GREEN) gpio_set_level(LED_GREEN, 1);
+                if (cmd.led & LED_RED)   gpio_set_level(LED_RED, 1);
+                if (cmd.led & LED_BUILTIN)  gpio_set_level(LED_BUILTIN, 1);
+
+                vTaskDelay(pdMS_TO_TICKS(cmd.duration));
+
+                if (cmd.led & LED_GREEN) gpio_set_level(LED_GREEN, 0);
+                if (cmd.led & LED_RED)   gpio_set_level(LED_RED, 0);
+                if (cmd.led & LED_BUILTIN)  gpio_set_level(LED_BUILTIN, 0);
+
+                vTaskDelay(pdMS_TO_TICKS(cmd.duration));
             }
+        }
+    }
 }
