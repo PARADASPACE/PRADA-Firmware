@@ -19,4 +19,7 @@ dependencies:
   espressif/i2c_bus: =*
   maucke/mpu6050: ^1.1.1
   espressif/esp32-camera: '*'
-  dernasherbrezon/sx127x: ^4.0.1
+#  dernasherbrezon/sx127x: ^4.0.1
+  nopnop2002/sx127x:
+    path: components/lora/
+    git: https://github.com/nopnop2002/esp-idf-sx127x.git

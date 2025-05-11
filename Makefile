@@ -1878,19 +1878,6 @@ __idf_wifi_provisioning/fast:
 .PHONY : __idf_wifi_provisioning/fast
 
 #=============================================================================
-# Target rules for targets named __idf_dernasherbrezon__sx127x
-
-# Build rule for target.
-__idf_dernasherbrezon__sx127x: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __idf_dernasherbrezon__sx127x
-.PHONY : __idf_dernasherbrezon__sx127x
-
-# fast build rule for target.
-__idf_dernasherbrezon__sx127x/fast:
-	$(MAKE) $(MAKESILENT) -f esp-idf/dernasherbrezon__sx127x/CMakeFiles/__idf_dernasherbrezon__sx127x.dir/build.make esp-idf/dernasherbrezon__sx127x/CMakeFiles/__idf_dernasherbrezon__sx127x.dir/build
-.PHONY : __idf_dernasherbrezon__sx127x/fast
-
-#=============================================================================
 # Target rules for targets named __idf_espressif__i2c_bus
 
 # Build rule for target.
@@ -1941,6 +1928,19 @@ __idf_maucke__mpu6050: cmake_check_build_system
 __idf_maucke__mpu6050/fast:
 	$(MAKE) $(MAKESILENT) -f esp-idf/maucke__mpu6050/CMakeFiles/__idf_maucke__mpu6050.dir/build.make esp-idf/maucke__mpu6050/CMakeFiles/__idf_maucke__mpu6050.dir/build
 .PHONY : __idf_maucke__mpu6050/fast
+
+#=============================================================================
+# Target rules for targets named __idf_nopnop2002__sx127x
+
+# Build rule for target.
+__idf_nopnop2002__sx127x: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __idf_nopnop2002__sx127x
+.PHONY : __idf_nopnop2002__sx127x
+
+# fast build rule for target.
+__idf_nopnop2002__sx127x/fast:
+	$(MAKE) $(MAKESILENT) -f esp-idf/nopnop2002__sx127x/CMakeFiles/__idf_nopnop2002__sx127x.dir/build.make esp-idf/nopnop2002__sx127x/CMakeFiles/__idf_nopnop2002__sx127x.dir/build
+.PHONY : __idf_nopnop2002__sx127x/fast
 
 #=============================================================================
 # Target rules for targets named __idf_main
@@ -2038,7 +2038,6 @@ help:
 	@echo "... __idf_cmock"
 	@echo "... __idf_console"
 	@echo "... __idf_cxx"
-	@echo "... __idf_dernasherbrezon__sx127x"
 	@echo "... __idf_driver"
 	@echo "... __idf_efuse"
 	@echo "... __idf_esp-tls"
@@ -2105,6 +2104,7 @@ help:
 	@echo "... __idf_mbedtls"
 	@echo "... __idf_mqtt"
 	@echo "... __idf_newlib"
+	@echo "... __idf_nopnop2002__sx127x"
 	@echo "... __idf_nvs_flash"
 	@echo "... __idf_nvs_sec_provider"
 	@echo "... __idf_perfmon"

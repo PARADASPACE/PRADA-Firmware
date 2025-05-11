@@ -92,9 +92,12 @@ void taskTx(void *pvParameters);
 
 /* @Structure to tx*/
 struct MEASURING_MODULES{
-    struct BME_STRUCTURE bme280;
-    struct MPU_STRUCTURE mpu6050;
-    //char gpsBuffer[BUFFER_LENGTH];
+    float bme_temperature;
+    float humidity;
+    float pressure;
+    mpu6050_acce_value_t acceleration;
+    mpu6050_gyro_value_t gyroscope;
+    mpu6050_temp_value_t mpu_temperature;
 };
 int systemInitializaton(struct MEASURING_MODULES* modules);
 
@@ -264,31 +267,17 @@ void espHandleError(const char* tag, esp_err_t err){
 }
 
 void taskTx(void *pvParameters){
-    ESP_LOGI(loraTag, "Transmit start");
-    struct MEASURING_MODULES* modules = (struct MEASURING_MODULES*)pvParameters;
+    ESP_LOGI(pcTaskGetName(NULL), "Start");
+    uint8_t buf[256];
     while(1) {
-        updateBME(&modules->bme280);
-        updateMPU(&modules->mpu6050);
-        ESP_LOGI(loraTag, "Temperature: %f", modules->bme280.temperature);
-        ESP_LOGI(loraTag, "Humidity: %f", modules->bme280.humidity);
-        ESP_LOGI(loraTag, "Pressure: %f", modules->bme280.pressure);
-        ESP_LOGI(loraTag, "Temperature: %f",modules->mpu6050.temperature.temp);
-        ESP_LOGI(loraTag, "acc_x: %f\tacc_y: %f\tacc_z: %f",
-                modules->mpu6050.acceleration.acce_x,
-                modules->mpu6050.acceleration.acce_y,
-                modules->mpu6050.acceleration.acce_z);
-        ESP_LOGI(loraTag, "gyro_x: %f\tgyro_y: %f\tgyro_z: %f",
-                modules->mpu6050.gyroscope.gyro_x,
-                modules->mpu6050.gyroscope.gyro_y,
-                modules->mpu6050.gyroscope.gyro_z);
+        TickType_t nowTick = xTaskGetTickCount();
         lora_send_packet((uint8_t*)pvParameters, sizeof(struct MEASURING_MODULES));
-        ESP_LOGI(loraTag, "%d byte packet sent...", sizeof(struct MEASURING_MODULES));
+        ESP_LOGI(pcTaskGetName(NULL), "%d byte packet sent...", sizeof(struct MEASURING_MODULES));
         int lost = lora_packet_lost();
         if (lost != 0) {
-            ESP_LOGW(loraTag, "%d packets lost", lost);
+            ESP_LOGW(pcTaskGetName(NULL), "%d packets lost", lost);
         }
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
-    ESP_LOGI(loraTag, "Transmit end");
 }
 
