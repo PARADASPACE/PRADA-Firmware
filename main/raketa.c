@@ -81,8 +81,9 @@ struct MPU_STRUCTURE{
 void updateMPU(struct MPU_STRUCTURE* mpu);
 
 /* @GPS */
-void gpsInit(char* gpsBuffer);
-void gpsUpdate(char* gpsBuffer);
+#define GPS_BUFFER 1024
+void gpsInit(void);
+void gpsUpdate(void);
 
 
 /* @LORA */
@@ -113,7 +114,14 @@ static const char* loraTag = "LORA";
 
 void app_main(void){
     char* mainTask = "Main";
-
+    ESP_LOGI(mainTask, "BEFORE GPS.");
+    gpsInit();
+    ESP_LOGI(mainTask, "AFTER INIT.");
+    while(1){
+        ESP_LOGI(mainTask, "GPS UPDATEL:::::::.");
+        gpsUpdate();
+        vTaskDelay(milliseconds(1000));
+    }
     struct MEASURING_MODULES modules = {};
 
     if(systemInitializaton(&modules) == 1)
@@ -148,28 +156,6 @@ void app_main(void){
 	//int sf = lora_get_spreading_factor();
 	ESP_LOGI(pcTaskGetName(NULL), "spreading_factor=%d", sf);
     xTaskCreate(&taskTx, "TX", 1024*3, &modules, 5, NULL);
-    while(1){
-        updateBME(&modules.bme280);
-        updateMPU(&modules.mpu6050);
-
-        ESP_LOGI(bmeTag, "Temperature: %f", modules.bme280.temperature);
-        ESP_LOGI(bmeTag, "Humidity: %f", modules.bme280.humidity);
-        ESP_LOGI(bmeTag, "Pressure: %f", modules.bme280.pressure);
-
-        ESP_LOGI(mpuTag, "Temperature: %f",
-                modules.mpu6050.temperature.temp);
-        ESP_LOGI(mpuTag, "acc_x: %f\tacc_y: %f\tacc_z: %f",
-                modules.mpu6050.acceleration.acce_x,
-                modules.mpu6050.acceleration.acce_y,
-                modules.mpu6050.acceleration.acce_z);
-        ESP_LOGI(mpuTag, "gyro_x: %f\tgyro_y: %f\tgyro_z: %f",
-                modules.mpu6050.gyroscope.gyro_x,
-                modules.mpu6050.gyroscope.gyro_y,
-                modules.mpu6050.gyroscope.gyro_z);
-        //ESP_LOGI(mainTask, "GPS: %s", modules.gpsBuffer);
-
-        vTaskDelay(seconds(1));
-    }
 }
 
 int systemInitializaton(struct MEASURING_MODULES* modules){
@@ -292,3 +278,24 @@ void taskTx(void *pvParameters){
     ESP_LOGI(loraTag, "Transmit end");
 }
 
+void gpsInit(void){
+    const uart_port_t uart_num = UART_NUM_2;
+    uart_config_t uart_config = {
+        .baud_rate = 9600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    };
+    ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(uart_num, UART_PIN_NO_CHANGE, 12, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_driver_install(uart_num, GPS_BUFFER, 0, 0, NULL, 0));
+}
+
+
+void gpsUpdate(void){
+    char tempBuf[GPS_BUFFER];
+    memset(tempBuf, 0, GPS_BUFFER);
+    uart_read_bytes(UART_NUM_2, tempBuf, GPS_BUFFER, portMAX_DELAY);
+    ESP_LOGI(gpsTag, "%s", tempBuf);
+}
