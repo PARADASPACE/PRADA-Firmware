@@ -17,8 +17,11 @@
 // This is the source code for a rocket build by the PARADASPACE team.
 // It's purpose is to measure and provide
 // useful data and emulate real life scenarios.
-#include "freertos/FreeRTOS.h"
 
+
+#define LOG_MODULES 1
+
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "memory.h"
 
@@ -33,14 +36,12 @@
 #include "hal/uart_types.h"
 #include "i2c_bus.h"
 
-
 /* Custom headers */
 #include "misc/tickConversion.h"
 
 
-
-#define I2C_MASTER_SDA_IO   (gpio_num_t)22
-#define I2C_MASTER_SCL_IO   (gpio_num_t)23
+#define I2C_MASTER_SDA_IO   (gpio_num_t)21
+#define I2C_MASTER_SCL_IO   (gpio_num_t)22
 #define I2C_MASTER_FREQ_HZ  100000
 //#define ESP_SLAVE_ADDR      0x28
 #define DATA_LENGTH         64
@@ -48,6 +49,7 @@
 #define UART_NUM UART_NUM_1
 
 /* !< SPI definitions */
+/* Changed in lora.h lib*/
 #define SCK 0
 #define MISO 15
 #define MOSI 2
@@ -56,11 +58,7 @@
 #define RST 5
 
 
-
-
-
 /* @I2C */
-static i2c_bus_handle_t i2cBusHandle = NULL;
 i2c_bus_handle_t i2cInit();
 
 /* @SPI */
@@ -68,37 +66,59 @@ spi_device_handle_t spiInit();
 
 /* @BME */
 #include "bme280.h"
-struct BME_STRUCTURE{
+typedef struct{
     bme280_handle_t bmeHandle;
     float temperature;
     float humidity;
     float pressure;
-};
-void updateBME(struct BME_STRUCTURE* bme);
+} bme_structure_t;
+void updateBME(bme280_handle_t* bme2080_h, bme_structure_t* bme);
 
 /* @MPU */
 /*
  * mpu6050.h is using the new i2c driver!
 */
 #include "mpu6050.h"
-struct MPU_STRUCTURE{
+typedef struct {
     mpu6050_handle_t mpuHandle;
     mpu6050_acce_value_t acceleration;
     mpu6050_gyro_value_t gyroscope;
     mpu6050_temp_value_t temperature;
-};
-void updateMPU(struct MPU_STRUCTURE* mpu);
+} mpu_structure_t;
+void updateMPU(mpu6050_handle_t* mpu6050_h, mpu_structure_t* mpu);
 
 /* @GPS */
 #define GPS_BUFFER 1024
+#define GPS_PIN 13
 void gpsInit(void);
 void gpsUpdate(void);
-
+typedef struct{
+    float lat;
+    float lon;
+    float alt;
+} gps_data_t;
 
 /* @LORA */
+typedef struct{
+    int16_t temp_cx100;
+    uint16_t humidity_px10;
+    uint16_t pressure_hPax10;
+
+    int16_t acce_x, acce_y, acce_z;
+    int16_t gyro_x, gyro_y, gyro_z;
+    int16_t mpu_temp_cx100;
+
+    int32_t gps_lat_microdeg;
+    int32_t gps_lon_microdeg;
+    int32_t gps_alt_cm;
+
+//    uint32_t timestamp_s;
+    uint8_t crc8;
+} __attribute__((packed)) sensor_packet_t;
 #include "lora.h"
 void taskTx(void *pvParameters);
-
+sensor_packet_t build_sensor_packet(bme280_handle_t* bme_h,
+                                    mpu6050_handle_t* mpu_h);
 /* @SYSTEM OUTPUT */
 #define START 0x1
 #define END 0x2
@@ -107,8 +127,8 @@ void taskTx(void *pvParameters);
 #define SUCCESS 0x5
 
 #define LED_BUILTIN 33
-#define LED_GREEN 34
-#define LED_RED 35
+#define LED_GREEN 32
+#define LED_RED 25
 typedef struct{
     uint8_t led;
     uint8_t count;
@@ -120,19 +140,17 @@ void logLEDSequence(const char* taskName, const uint8_t status);
 void blink(uint8_t led);
 void ledTask(void *pvParameters);
 
-/* @Structure to tx*/
-struct MEASURING_MODULES{
-    struct BME_STRUCTURE bme280;
-    struct MPU_STRUCTURE mpu6050;
-    //char gpsBuffer[BUFFER_LENGTH];
-};
-int systemInitializaton(struct MEASURING_MODULES* modules);
+typedef struct {
+    bme280_handle_t bme280_h;
+    mpu6050_handle_t mpu6050_h;
+} modules_handle_t;
+int systemInitializaton(modules_handle_t* handles);
 
 /* @Error handling */
 void espHandleError(const char* tag, esp_err_t err);
 
-
-static esp_err_t err;
+/* @Compression */
+uint8_t crc8(const uint8_t* data, size_t len);
 /* @TaskNames */
 static const char *sxTag = "sx127x";
 static const char* bmeTag = "BME280";
@@ -142,14 +160,16 @@ static const char* loraTag = "LORA";
 
 void app_main(void){
     char* mainTask = "Main";
-    struct MEASURING_MODULES modules = {};
+    modules_handle_t handles = {};
 
-    if(systemInitializaton(&modules) == 1)
+    if(systemInitializaton(&handles) == 1){
         ESP_LOGI(mainTask, "System initialization successfull.");
-    else{
-        ESP_LOGW(mainTask, "System initialization unsuccessfull.");
+        logLEDSequence("Init", SUCCESS);
+    }else{
+        ESP_LOGE(mainTask, "System initialization unsuccessfull.");
+        logLEDSequence("Init", ERROR);
     }
-    // setup the lora module
+   // setup the lora module
 	if (lora_init() == 0) {
 		ESP_LOGE(loraTag, "Does not recognize the module");
 		while(1) {
@@ -175,10 +195,11 @@ void app_main(void){
 	//lora_set_spreading_factor(CONFIG_SF_RATE);
 	//int sf = lora_get_spreading_factor();
 	ESP_LOGI(pcTaskGetName(NULL), "spreading_factor=%d", sf);
-    xTaskCreate(&taskTx, "TX", 1024*3, &modules, 5, NULL);
+    xTaskCreate(&taskTx, "TX", 1024*3, &handles, 5, NULL);
 }
 
-int systemInitializaton(struct MEASURING_MODULES* modules){
+int systemInitializaton(modules_handle_t* handles){
+    esp_err_t err;
     char* sysInitTask = "System Initialization";
     ESP_LOGI(sysInitTask , "Starting Prada Initializaton...");
     gpio_reset_pin(LED_BUILTIN);
@@ -193,29 +214,29 @@ int systemInitializaton(struct MEASURING_MODULES* modules){
 
 
     // >! I2C Initialization
-    i2cBusHandle = i2cInit();
+    i2c_bus_handle_t i2cBusHandle = i2cInit();
     TEST_ASSERT_NOT_NULL_MESSAGE(i2cInit(),
             "I2C Initialization failed.");
     // >! GPS Initialization
     gpsInit();
     // >>! BME280 Initializaton
-    modules->bme280.bmeHandle = bme280_create(i2cBusHandle,
+    handles->bme280_h = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
-    TEST_ASSERT_NOT_NULL_MESSAGE(modules->bme280.bmeHandle,
+    TEST_ASSERT_NOT_NULL_MESSAGE(handles->bme280_h,
             "BME280 Handle is NULL.");
-    err = bme280_default_init(modules->bme280.bmeHandle);
+    err = bme280_default_init(handles->bme280_h);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "BME280 Default initialization failed.");
 
     // >>! MPU6050 Initialization
-    modules->mpu6050.mpuHandle = mpu6050_create(i2cBusHandle,
+    handles->mpu6050_h = mpu6050_create(i2cBusHandle,
                                                 MPU6050_I2C_ADDRESS);
-    TEST_ASSERT_NOT_NULL_MESSAGE(modules->mpu6050.mpuHandle,
+    TEST_ASSERT_NOT_NULL_MESSAGE(handles->mpu6050_h,
             "MPU6050 Handle is NULL.");
-    err = mpu6050_config(modules->mpu6050.mpuHandle,
+    err = mpu6050_config(handles->mpu6050_h,
             ACCE_FS_4G, GYRO_FS_500DPS);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Config failed.");
-    err = mpu6050_wake_up(modules->mpu6050.mpuHandle);
+    err = mpu6050_wake_up(handles->mpu6050_h);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
 
 
@@ -238,64 +259,61 @@ i2c_bus_handle_t i2cInit(){
     return i2c_bus;
 }
 
-
-void updateBME(struct BME_STRUCTURE* bme){
-    err = bme280_read_humidity(bme->bmeHandle, &bme->humidity);
+void updateBME(bme280_handle_t* bme2080_h, bme_structure_t* bme){
+    esp_err_t err;
+    vTaskDelay(milliseconds(100));
+    err = bme280_read_pressure(bme2080_h, &bme->pressure);
+    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
+            "BME280 Failed to read the pressure.");
+    err = bme280_read_humidity(bme2080_h, &bme->humidity);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "BME280 Failed to read the humidity.");
     vTaskDelay(milliseconds(100));
-    err = bme280_read_pressure(bme->bmeHandle, &bme->pressure);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "BME280 Failed to read the pressure.");
-    vTaskDelay(milliseconds(100));
-    err = bme280_read_temperature(bme->bmeHandle, &bme->temperature);
+    err = bme280_read_temperature(bme2080_h, &bme->temperature);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "BME280 Failed to read the temperature.");
     vTaskDelay(milliseconds(100));
 }
 
-void updateMPU(struct MPU_STRUCTURE* mpu){
-    err = mpu6050_get_acce(mpu->mpuHandle, &mpu->acceleration);
+void updateMPU(mpu6050_handle_t* mpu6050_h, mpu_structure_t* mpu){
+    esp_err_t err;
+    err = mpu6050_get_acce(mpu6050_h, &mpu->acceleration);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "MPU6050 Failed to read the acceleration.");
+    if(err != ESP_OK){
+        logLEDSequence("MPU acc", ERROR);
+    }
     vTaskDelay(milliseconds(100));
-    err = mpu6050_get_gyro(mpu->mpuHandle, &mpu->gyroscope);
+    err = mpu6050_get_gyro(mpu6050_h, &mpu->gyroscope);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "MPU6050 Failed to read the gyroscope.");
+    if(err != ESP_OK){
+        logLEDSequence("MPU gyro", ERROR);
+    }
     vTaskDelay(milliseconds(100));
-    err = mpu6050_get_temp(mpu->mpuHandle, &mpu->temperature);
+    err = mpu6050_get_temp(mpu6050_h, &mpu->temperature);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "MPU6050 Failed to read the temperature.");
+    if(err != ESP_OK){
+        logLEDSequence("MPU temp", ERROR);
+    }
     vTaskDelay(milliseconds(100));
 }
 void espHandleError(const char* tag, esp_err_t err){
     if(err != ESP_OK){
-        ESP_LOGW(tag, " failed: %s", esp_err_to_name(err));
+        ESP_LOGE(tag, " failed: %s", esp_err_to_name(err));
+        logLEDSequence(tag, ERROR);
     }
 }
 
 void taskTx(void *pvParameters){
     ESP_LOGI(loraTag, "Transmit start");
-    struct MEASURING_MODULES* modules = (struct MEASURING_MODULES*)pvParameters;
+    modules_handle_t* handles = (modules_handle_t*)pvParameters;
     while(1) {
-        updateBME(&modules->bme280);
-        updateMPU(&modules->mpu6050);
-        ESP_LOGI(loraTag, "Temperature: %f", modules->bme280.temperature);
-        ESP_LOGI(loraTag, "Humidity: %f", modules->bme280.humidity);
-        ESP_LOGI(loraTag, "Pressure: %f", modules->bme280.pressure);
-        ESP_LOGI(loraTag, "Temperature: %f",modules->mpu6050.temperature.temp);
-        ESP_LOGI(loraTag, "acc_x: %f\tacc_y: %f\tacc_z: %f",
-                modules->mpu6050.acceleration.acce_x,
-                modules->mpu6050.acceleration.acce_y,
-                modules->mpu6050.acceleration.acce_z);
-        ESP_LOGI(loraTag, "gyro_x: %f\tgyro_y: %f\tgyro_z: %f",
-                modules->mpu6050.gyroscope.gyro_x,
-                modules->mpu6050.gyroscope.gyro_y,
-                modules->mpu6050.gyroscope.gyro_z);
-        lora_send_packet((uint8_t*)pvParameters,
-                sizeof(struct MEASURING_MODULES));
-        ESP_LOGI(loraTag, "%d byte packet sent...",
-                sizeof(struct MEASURING_MODULES));
+        sensor_packet_t packet_tx = build_sensor_packet(handles->bme280_h, handles->mpu6050_h);
+        lora_send_packet((uint8_t* )&packet_tx,
+                sizeof(sensor_packet_t));
+        logLEDSequence("LoraTX", SUCCESS);
         int lost = lora_packet_lost();
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
@@ -303,6 +321,7 @@ void taskTx(void *pvParameters){
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
     ESP_LOGI(loraTag, "Transmit end");
+    logLEDSequence("Lora", END);
 }
 
 void gpsInit(void){
@@ -315,11 +334,10 @@ void gpsInit(void){
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     };
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, UART_PIN_NO_CHANGE, 12,
+    ESP_ERROR_CHECK(uart_set_pin(uart_num, UART_PIN_NO_CHANGE, GPS_PIN,
                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_driver_install(uart_num, GPS_BUFFER, 0, 0, NULL, 0));
 }
-
 
 void gpsUpdate(void){
     char tempBuf[GPS_BUFFER];
@@ -376,22 +394,78 @@ void logLEDSequence(const char* taskName, const uint8_t status) {
 }
 void ledTask(void *pvParameters){
     led_cmd_t cmd;
-
     while (1) {
         if (xQueueReceive(ledQueue, &cmd, portMAX_DELAY)) {
             for (int i = 0; i < cmd.count; ++i) {
                 if (cmd.led & LED_GREEN) gpio_set_level(LED_GREEN, 1);
                 if (cmd.led & LED_RED)   gpio_set_level(LED_RED, 1);
                 if (cmd.led & LED_BUILTIN)  gpio_set_level(LED_BUILTIN, 1);
-
                 vTaskDelay(pdMS_TO_TICKS(cmd.duration));
-
                 if (cmd.led & LED_GREEN) gpio_set_level(LED_GREEN, 0);
                 if (cmd.led & LED_RED)   gpio_set_level(LED_RED, 0);
                 if (cmd.led & LED_BUILTIN)  gpio_set_level(LED_BUILTIN, 0);
-
                 vTaskDelay(pdMS_TO_TICKS(cmd.duration));
             }
         }
     }
 }
+
+sensor_packet_t build_sensor_packet(
+        bme280_handle_t* bme_h,
+        mpu6050_handle_t* mpu_h
+        ){
+    bme_structure_t bme_s;
+    mpu_structure_t mpu_s;
+    gps_data_t gps_s;
+    updateBME(bme_h, &bme_s);
+    updateMPU(mpu_h, &mpu_s);
+#if LOG_MODULES
+    ESP_LOGI(bmeTag, "Temperature: %f", bme_s.temperature);
+    ESP_LOGI(bmeTag, "Humidity: %f", bme_s.humidity);
+    ESP_LOGI(bmeTag, "Pressure: %f", bme_s.pressure);
+
+    ESP_LOGI(mpuTag, "Temperature: %f",mpu_s.temperature.temp);
+    ESP_LOGI(mpuTag, "acc_x: %f\tacc_y: %f\tacc_z: %f",
+            mpu_s.acceleration.acce_x,
+            mpu_s.acceleration.acce_y,
+            mpu_s.acceleration.acce_z);
+    ESP_LOGI(mpuTag, "gyro_x: %f\tgyro_y: %f\tgyro_z: %f",
+            mpu_s.gyroscope.gyro_x,
+            mpu_s.gyroscope.gyro_y,
+            mpu_s.gyroscope.gyro_z);
+#endif
+    sensor_packet_t packet;
+    packet.temp_cx100 = (int16_t)(bme_s.temperature*100);
+    packet.humidity_px10 = (int16_t)(bme_s.humidity*10);
+    packet.pressure_hPax10 = (int16_t)(bme_s.pressure*10);
+
+    packet.acce_x = ((int16_t)mpu_s.acceleration.acce_x *1000);
+    packet.acce_y = ((int16_t)mpu_s.acceleration.acce_y *1000);
+    packet.acce_z = ((int16_t)mpu_s.acceleration.acce_z *1000);
+
+    packet.gyro_x = ((int16_t)mpu_s.gyroscope.gyro_x*10);
+    packet.gyro_y = ((int16_t)mpu_s.gyroscope.gyro_y*10);
+    packet.gyro_z = ((int16_t)mpu_s.gyroscope.gyro_z*10);
+
+    packet.gps_lat_microdeg = (int32_t)(gps_s.lat*1e6);
+    packet.gps_lon_microdeg = (int32_t)(gps_s.lon*1e6);
+    packet.gps_alt_cm = (int32_t)(gps_s.alt*100);
+
+    //packet.timestamp_s = esp_timer_get_time() /1000000ULL;
+    packet.crc8 = crc8((uint8_t*)&packet, sizeof(packet)-1);
+
+    return packet;
+}
+
+// let's hope this is correct
+uint8_t crc8(const uint8_t *data, size_t len) {
+    uint8_t crc = 0x00;
+    for (size_t i = 0; i < len; ++i) {
+        crc ^= data[i];
+        for (uint8_t j = 0; j < 8; ++j) {
+            crc = (crc & 0x80) ? (crc << 1) ^ 0x07 : (crc << 1);
+        }
+    }
+    return crc;
+}
+
