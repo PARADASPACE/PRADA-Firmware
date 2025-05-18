@@ -72,7 +72,7 @@ typedef struct{
     float humidity;
     float pressure;
 } bme_structure_t;
-void updateBME(bme280_handle_t* bme2080_h, bme_structure_t* bme);
+void updateBME(bme280_handle_t bme2080_h, bme_structure_t* bme);
 
 /* @MPU */
 /*
@@ -85,7 +85,7 @@ typedef struct {
     mpu6050_gyro_value_t gyroscope;
     mpu6050_temp_value_t temperature;
 } mpu_structure_t;
-void updateMPU(mpu6050_handle_t* mpu6050_h, mpu_structure_t* mpu);
+void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu);
 
 /* @GPS */
 #define GPS_BUFFER 1024
@@ -108,17 +108,19 @@ typedef struct{
     int16_t gyro_x, gyro_y, gyro_z;
     int16_t mpu_temp_cx100;
 
+    /*
     int32_t gps_lat_microdeg;
     int32_t gps_lon_microdeg;
     int32_t gps_alt_cm;
+    */
 
 //    uint32_t timestamp_s;
     uint8_t crc8;
 } __attribute__((packed)) sensor_packet_t;
 #include "lora.h"
 void taskTx(void *pvParameters);
-sensor_packet_t build_sensor_packet(bme280_handle_t* bme_h,
-                                    mpu6050_handle_t* mpu_h);
+sensor_packet_t build_sensor_packet(bme280_handle_t bme_h,
+                                    mpu6050_handle_t mpu_h);
 /* @SYSTEM OUTPUT */
 #define START 0x1
 #define END 0x2
@@ -152,7 +154,6 @@ void espHandleError(const char* tag, esp_err_t err);
 /* @Compression */
 uint8_t crc8(const uint8_t* data, size_t len);
 /* @TaskNames */
-static const char *sxTag = "sx127x";
 static const char* bmeTag = "BME280";
 static const char* mpuTag = "MPU6050";
 static const char* gpsTag = "GPS";
@@ -160,7 +161,7 @@ static const char* loraTag = "LORA";
 
 void app_main(void){
     char* mainTask = "Main";
-    modules_handle_t handles = {};
+    static modules_handle_t handles = {};
 
     if(systemInitializaton(&handles) == 1){
         ESP_LOGI(mainTask, "System initialization successfull.");
@@ -215,8 +216,6 @@ int systemInitializaton(modules_handle_t* handles){
 
     // >! I2C Initialization
     i2c_bus_handle_t i2cBusHandle = i2cInit();
-    TEST_ASSERT_NOT_NULL_MESSAGE(i2cInit(),
-            "I2C Initialization failed.");
     // >! GPS Initialization
     gpsInit();
     // >>! BME280 Initializaton
@@ -259,23 +258,28 @@ i2c_bus_handle_t i2cInit(){
     return i2c_bus;
 }
 
-void updateBME(bme280_handle_t* bme2080_h, bme_structure_t* bme){
+void updateBME(bme280_handle_t bme2080_h, bme_structure_t* bme){
     esp_err_t err;
-    vTaskDelay(milliseconds(100));
+    vTaskDelay(milliseconds(300));
+    ESP_LOGI(bmeTag, "Reading pressure...");
     err = bme280_read_pressure(bme2080_h, &bme->pressure);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "BME280 Failed to read the pressure.");
+    ESP_LOGI(bmeTag, "Reading humidity...");
     err = bme280_read_humidity(bme2080_h, &bme->humidity);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "BME280 Failed to read the humidity.");
-    vTaskDelay(milliseconds(100));
+    vTaskDelay(milliseconds(300));
+    ESP_LOGI(bmeTag, "Reading temperature...");
     err = bme280_read_temperature(bme2080_h, &bme->temperature);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
             "BME280 Failed to read the temperature.");
-    vTaskDelay(milliseconds(100));
+    vTaskDelay(milliseconds(300));
+    ESP_LOGI(bmeTag, "bme2080_h: %p", bme2080_h);
+
 }
 
-void updateMPU(mpu6050_handle_t* mpu6050_h, mpu_structure_t* mpu){
+void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu){
     esp_err_t err;
     err = mpu6050_get_acce(mpu6050_h, &mpu->acceleration);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
@@ -310,6 +314,7 @@ void taskTx(void *pvParameters){
     ESP_LOGI(loraTag, "Transmit start");
     modules_handle_t* handles = (modules_handle_t*)pvParameters;
     while(1) {
+        ESP_LOGI(loraTag, "bme handle at TX loop: %p", handles->bme280_h);
         sensor_packet_t packet_tx = build_sensor_packet(handles->bme280_h, handles->mpu6050_h);
         lora_send_packet((uint8_t* )&packet_tx,
                 sizeof(sensor_packet_t));
@@ -411,47 +416,51 @@ void ledTask(void *pvParameters){
 }
 
 sensor_packet_t build_sensor_packet(
-        bme280_handle_t* bme_h,
-        mpu6050_handle_t* mpu_h
+        bme280_handle_t bme_h,
+        mpu6050_handle_t mpu_h
         ){
-    bme_structure_t bme_s;
-    mpu_structure_t mpu_s;
-    gps_data_t gps_s;
+    bme_structure_t bme_s = {};
+    mpu_structure_t mpu_s = {};
+    //gps_data_t gps_s;
     updateBME(bme_h, &bme_s);
     updateMPU(mpu_h, &mpu_s);
 #if LOG_MODULES
-    ESP_LOGI(bmeTag, "Temperature: %f", bme_s.temperature);
-    ESP_LOGI(bmeTag, "Humidity: %f", bme_s.humidity);
-    ESP_LOGI(bmeTag, "Pressure: %f", bme_s.pressure);
+    ESP_LOGI(bmeTag, "Temperature: %.2f", bme_s.temperature);
+    ESP_LOGI(bmeTag, "Humidity: %.2f", bme_s.humidity);
+    ESP_LOGI(bmeTag, "Pressure: %.2f", bme_s.pressure);
 
-    ESP_LOGI(mpuTag, "Temperature: %f",mpu_s.temperature.temp);
-    ESP_LOGI(mpuTag, "acc_x: %f\tacc_y: %f\tacc_z: %f",
+    ESP_LOGI(mpuTag, "MPU Temperature: %.2f",mpu_s.temperature.temp);
+    ESP_LOGI(mpuTag, "acc_x: %.2f\tacc_y: %.2f\tacc_z: %.2f",
             mpu_s.acceleration.acce_x,
             mpu_s.acceleration.acce_y,
             mpu_s.acceleration.acce_z);
-    ESP_LOGI(mpuTag, "gyro_x: %f\tgyro_y: %f\tgyro_z: %f",
+    ESP_LOGI(mpuTag, "gyro_x: %.2f\tgyro_y: %.2f\tgyro_z: %.2f",
             mpu_s.gyroscope.gyro_x,
             mpu_s.gyroscope.gyro_y,
             mpu_s.gyroscope.gyro_z);
+    //gpsUpdate();
 #endif
-    sensor_packet_t packet;
-    packet.temp_cx100 = (int16_t)(bme_s.temperature*100);
-    packet.humidity_px10 = (int16_t)(bme_s.humidity*10);
-    packet.pressure_hPax10 = (int16_t)(bme_s.pressure*10);
+    sensor_packet_t packet = {
+        .temp_cx100 = (int16_t)(bme_s.temperature*100),
+        .humidity_px10 = (int16_t)(bme_s.humidity*10),
+        .pressure_hPax10 = (int16_t)(bme_s.pressure*10),
 
-    packet.acce_x = ((int16_t)mpu_s.acceleration.acce_x *1000);
-    packet.acce_y = ((int16_t)mpu_s.acceleration.acce_y *1000);
-    packet.acce_z = ((int16_t)mpu_s.acceleration.acce_z *1000);
+        .acce_x = ((int16_t)mpu_s.acceleration.acce_x *1000),
+        .acce_y = ((int16_t)mpu_s.acceleration.acce_y *1000),
+        .acce_z = ((int16_t)mpu_s.acceleration.acce_z *1000),
 
-    packet.gyro_x = ((int16_t)mpu_s.gyroscope.gyro_x*10);
-    packet.gyro_y = ((int16_t)mpu_s.gyroscope.gyro_y*10);
-    packet.gyro_z = ((int16_t)mpu_s.gyroscope.gyro_z*10);
+        .gyro_x = ((int16_t)mpu_s.gyroscope.gyro_x*10),
+        .gyro_y = ((int16_t)mpu_s.gyroscope.gyro_y*10),
+        .gyro_z = ((int16_t)mpu_s.gyroscope.gyro_z*10),
+        .mpu_temp_cx100 = (int16_t)(mpu_s.temperature.temp * 100),
+        /*
+           packet.gps_lat_microdeg = (int32_t)(gps_s.lat*1e6);
+           packet.gps_lon_microdeg = (int32_t)(gps_s.lon*1e6);
+           packet.gps_alt_cm = (int32_t)(gps_s.alt*100);
+           */
 
-    packet.gps_lat_microdeg = (int32_t)(gps_s.lat*1e6);
-    packet.gps_lon_microdeg = (int32_t)(gps_s.lon*1e6);
-    packet.gps_alt_cm = (int32_t)(gps_s.alt*100);
-
-    //packet.timestamp_s = esp_timer_get_time() /1000000ULL;
+        //packet.timestamp_s = esp_timer_get_time() /1000000ULL;
+    };
     packet.crc8 = crc8((uint8_t*)&packet, sizeof(packet)-1);
 
     return packet;
