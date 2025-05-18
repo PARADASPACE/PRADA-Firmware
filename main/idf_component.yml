@@ -1,4 +1,4 @@
-## IDF Component Manager Manifest File
+# https://github.com/komso/minmea/# IDF Component Manager Manifest File
 dependencies:
   ## Required IDF version
   idf:
