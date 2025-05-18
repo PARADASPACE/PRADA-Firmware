@@ -468,6 +468,7 @@ sensor_packet_t build_sensor_packet(
             mpu_s.gyroscope.gyro_x,
             mpu_s.gyroscope.gyro_y,
             mpu_s.gyroscope.gyro_z);
+    ESP_LOGI(gpsTag, "GPS_LON: %f\tGPS_LAT: %f\tGPS_ALT: %f", gps_s.lon, gps_s.lat, gps_s.alt);
 #endif
     sensor_packet_t packet = {
         .temp_cx100 = (int16_t)(bme_s.temperature*100),
