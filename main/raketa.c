@@ -38,6 +38,7 @@
 
 /* Custom headers */
 #include "misc/tickConversion.h"
+#include "components/minmea/minmea.h"
 
 
 #define I2C_MASTER_SDA_IO   (gpio_num_t)21
@@ -90,13 +91,14 @@ void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu);
 /* @GPS */
 #define GPS_BUFFER 1024
 #define GPS_PIN 13
-void gpsInit(void);
-void gpsUpdate(void);
 typedef struct{
     float lat;
     float lon;
     float alt;
 } gps_data_t;
+void gpsInit(void);
+void updateGPS(gps_data_t* gps_s);
+
 
 /* @LORA */
 typedef struct{
@@ -108,11 +110,9 @@ typedef struct{
     int16_t gyro_x, gyro_y, gyro_z;
     int16_t mpu_temp_cx100;
 
-    /*
     int32_t gps_lat_microdeg;
     int32_t gps_lon_microdeg;
     int32_t gps_alt_cm;
-    */
 
 //    uint32_t timestamp_s;
     uint8_t crc8;
@@ -238,7 +238,6 @@ int systemInitializaton(modules_handle_t* handles){
     err = mpu6050_wake_up(handles->mpu6050_h);
     TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
 
-
     return 1;
 }
 
@@ -344,11 +343,41 @@ void gpsInit(void){
     ESP_ERROR_CHECK(uart_driver_install(uart_num, GPS_BUFFER, 0, 0, NULL, 0));
 }
 
-void gpsUpdate(void){
-    char tempBuf[GPS_BUFFER];
-    memset(tempBuf, 0, GPS_BUFFER);
-    uart_read_bytes(UART_NUM_2, tempBuf, GPS_BUFFER, portMAX_DELAY);
-    ESP_LOGI(gpsTag, "%s", tempBuf);
+void updateGPS(gps_data_t* gps_s){
+    uint8_t gpsBuffer[GPS_BUFFER];
+    char line[MINMEA_MAX_SENTENCE_LENGTH] = {0};
+    int line_pos = 0;
+    memset(gpsBuffer, 0, GPS_BUFFER);
+    gps_data_t _gps_s;
+    int len = uart_read_bytes(UART_NUM_2, gpsBuffer, GPS_BUFFER, 100/portTICK_PERIOD_MS);
+    if(len>0){
+        for(int i = 0; i < len; i++){
+            char c = (char)gpsBuffer[i];
+            if(c == '\r' || c == '\n'){
+                line[line_pos] = '\0';
+                line_pos = 0;
+                if(!minmea_check(line, true))
+                    continue;
+                switch(minmea_sentence_id(line, false)){
+                    case MINMEA_SENTENCE_GGA:
+                        {
+                            struct minmea_sentence_gga frame;
+                            if(minmea_parse_gga(&frame, line)){
+                                _gps_s.lat = minmea_tocoord(&frame.latitude);
+                                _gps_s.lon = minmea_tocoord(&frame.longitude);
+                                _gps_s.lat = minmea_tofloat(&frame.altitude);
+                            }
+                            break;
+                        }
+                    default:
+                        break;
+                }
+            }else if(line_pos < MINMEA_MAX_SENTENCE_LENGTH -1){
+                line[line_pos++] = c;
+            }
+        }
+    }
+    *gps_s = _gps_s;
 }
 
 void logLEDSequence(const char* taskName, const uint8_t status) {
@@ -421,9 +450,10 @@ sensor_packet_t build_sensor_packet(
         ){
     bme_structure_t bme_s = {};
     mpu_structure_t mpu_s = {};
-    //gps_data_t gps_s;
+    gps_data_t gps_s;
     updateBME(bme_h, &bme_s);
     updateMPU(mpu_h, &mpu_s);
+    updateGPS(&gps_s);
 #if LOG_MODULES
     ESP_LOGI(bmeTag, "Temperature: %.2f", bme_s.temperature);
     ESP_LOGI(bmeTag, "Humidity: %.2f", bme_s.humidity);
@@ -438,7 +468,6 @@ sensor_packet_t build_sensor_packet(
             mpu_s.gyroscope.gyro_x,
             mpu_s.gyroscope.gyro_y,
             mpu_s.gyroscope.gyro_z);
-    //gpsUpdate();
 #endif
     sensor_packet_t packet = {
         .temp_cx100 = (int16_t)(bme_s.temperature*100),
@@ -453,11 +482,10 @@ sensor_packet_t build_sensor_packet(
         .gyro_y = ((int16_t)mpu_s.gyroscope.gyro_y*10),
         .gyro_z = ((int16_t)mpu_s.gyroscope.gyro_z*10),
         .mpu_temp_cx100 = (int16_t)(mpu_s.temperature.temp * 100),
-        /*
-           packet.gps_lat_microdeg = (int32_t)(gps_s.lat*1e6);
-           packet.gps_lon_microdeg = (int32_t)(gps_s.lon*1e6);
-           packet.gps_alt_cm = (int32_t)(gps_s.alt*100);
-           */
+        .gps_lat_microdeg = (int32_t)(gps_s.lat*1e6),
+        .gps_lon_microdeg = (int32_t)(gps_s.lon*1e6),
+        .gps_alt_cm = (int32_t)(gps_s.alt*100),
+
 
         //packet.timestamp_s = esp_timer_get_time() /1000000ULL;
     };
@@ -477,4 +505,3 @@ uint8_t crc8(const uint8_t *data, size_t len) {
     }
     return crc;
 }
-
