@@ -39,8 +39,8 @@
 
 
 
-#define I2C_MASTER_SDA_IO   (gpio_num_t)14
-#define I2C_MASTER_SCL_IO   (gpio_num_t)15
+#define I2C_MASTER_SDA_IO   (gpio_num_t)22
+#define I2C_MASTER_SCL_IO   (gpio_num_t)23
 #define I2C_MASTER_FREQ_HZ  100000
 //#define ESP_SLAVE_ADDR      0x28
 #define DATA_LENGTH         64
@@ -48,12 +48,12 @@
 #define UART_NUM UART_NUM_1
 
 /* !< SPI definitions */
-#define SCK 5
-#define MISO 19
-#define MOSI 27
-#define SS 18
-#define DIO0 26
-#define RST 23
+#define SCK 0
+#define MISO 15
+#define MOSI 2
+#define SS 16
+#define DIO0 17
+#define RST 5
 
 
 
@@ -106,9 +106,9 @@ void taskTx(void *pvParameters);
 #define WARNING 0x4
 #define SUCCESS 0x5
 
-#define LED_GREEN (1<<1) // GPIO2
-#define LED_RED (1<<2) // GPIO4
 #define LED_BUILTIN 33
+#define LED_GREEN 34
+#define LED_RED 35
 typedef struct{
     uint8_t led;
     uint8_t count;
