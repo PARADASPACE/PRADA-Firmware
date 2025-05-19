@@ -19,6 +19,7 @@
 // useful data and emulate real life scenarios.
 
 
+#include "hal/spi_types.h"
 #define LOG_MODULES 1
 
 #include "freertos/FreeRTOS.h"
@@ -36,12 +37,16 @@
 #include "hal/uart_types.h"
 #include "i2c_bus.h"
 
+/* microSD drivers */
+#include "driver/sdspi_host.h"
 #include "esp_vfs_fat.h"
+#include "driver/spi_common.h"
 #include "sdmmc_cmd.h"
-#include "sdspi_host.h"
+#include "driver/sdmmc_host.h"
 
 /* Custom headers */
 #include "misc/tickConversion.h"
+// lib author: https://github.com/kosma/minmea
 #include "components/minmea/minmea.h"
 
 
@@ -61,14 +66,15 @@
 #define SS 16
 #define DIO0 17
 #define RST 5
-#define MOUNT_POINT "/data"
+
+#define sdSS 4
+
+
+#define MOUNT_POINT "/sdcard"
 
 
 /* @I2C */
 i2c_bus_handle_t i2cInit();
-
-/* @SPI */
-spi_device_handle_t spiInit();
 
 /* @BME */
 #include "bme280.h"
@@ -153,10 +159,13 @@ typedef struct {
 } modules_handle_t;
 int systemInitializaton(modules_handle_t* handles);
 
+/* @microSD logging */
+void init_sdcard(void);
+
 /* @Error handling */
 void espHandleError(const char* tag, esp_err_t err);
 
-/* @Compression */
+/* @Verification */
 uint8_t crc8(const uint8_t* data, size_t len);
 /* @TaskNames */
 static const char* bmeTag = "BME280";
@@ -164,8 +173,10 @@ static const char* mpuTag = "MPU6050";
 static const char* gpsTag = "GPS";
 static const char* loraTag = "LORA";
 
+
 void app_main(void){
     char* mainTask = "Main";
+
     static modules_handle_t handles = {};
 
     if(systemInitializaton(&handles) == 1){
@@ -217,7 +228,6 @@ int systemInitializaton(modules_handle_t* handles){
     ledQueue= xQueueCreate(LED_QUEUE_LEN, sizeof(led_cmd_t));
     xTaskCreate(ledTask, "LED_CONTROLLER", 2048, NULL, 10, NULL);
     logLEDSequence(sysInitTask, SUCCESS);
-
 
     // >! I2C Initialization
     i2c_bus_handle_t i2cBusHandle = i2cInit();
@@ -370,7 +380,7 @@ void updateGPS(gps_data_t* gps_s){
                             if(minmea_parse_gga(&frame, line)){
                                 _gps_s.lat = minmea_tocoord(&frame.latitude);
                                 _gps_s.lon = minmea_tocoord(&frame.longitude);
-                                _gps_s.lat = minmea_tofloat(&frame.altitude);
+                                _gps_s.alt = minmea_tofloat(&frame.altitude);
                             }
                             break;
                         }
@@ -510,4 +520,35 @@ uint8_t crc8(const uint8_t *data, size_t len) {
         }
     }
     return crc;
+}
+
+// ???
+void init_sdcard(void){
+    esp_err_t ret;
+    ESP_LOGI("microsd", "initing sd card using spi");
+
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    host.slot = HSPI_HOST;
+    host.flags = SDMMC_HOST_FLAG_SPI;
+
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.gpio_cs = sdSS;
+    slot_config.host_id = host.slot;
+
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+        .format_if_mount_failed = false,
+        .max_files = 5,
+        .allocation_unit_size = 16 * 1024
+    };
+        sdmmc_card_t* card;
+    ret = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &host, &slot_config, &mount_config, &card);
+
+    if (ret != ESP_OK) {
+        ESP_LOGE("microsd", "Failed to mount filesystem. Error: %s", esp_err_to_name(ret));
+        return;
+    }
+
+    ESP_LOGI("microsd", "SD card mounted successfully.");
+    sdmmc_card_print_info(stdout, card);
+
 }
