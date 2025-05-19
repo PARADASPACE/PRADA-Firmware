@@ -377,6 +377,7 @@ void updateGPS(gps_data_t* gps_s){
                     case MINMEA_SENTENCE_GGA:
                         {
                             struct minmea_sentence_gga frame;
+                            ESP_LOGI("GPS", "RAW Line: %s", line);
                             if(minmea_parse_gga(&frame, line)){
                                 _gps_s.lat = minmea_tocoord(&frame.latitude);
                                 _gps_s.lon = minmea_tocoord(&frame.longitude);
