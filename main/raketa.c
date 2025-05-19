@@ -36,6 +36,10 @@
 #include "hal/uart_types.h"
 #include "i2c_bus.h"
 
+#include "esp_vfs_fat.h"
+#include "sdmmc_cmd.h"
+#include "sdspi_host.h"
+
 /* Custom headers */
 #include "misc/tickConversion.h"
 #include "components/minmea/minmea.h"
@@ -57,6 +61,7 @@
 #define SS 16
 #define DIO0 17
 #define RST 5
+#define MOUNT_POINT "/data"
 
 
 /* @I2C */
