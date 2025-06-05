@@ -1,0 +1,2 @@
+Command: cmake -G Unix Makefiles -DPYTHON_DEPS_CHECKED=1 -DPYTHON=/home/wtf/.espressif/python_env/idf5.5_py3.13_env/bin/python -DESP_PLATFORM=1 -DCCACHE_ENABLE=0 /home/wtf/Documents/esp-idf/projects/PRADA-Firmware/main
+-- Configuring incomplete, errors occurred!
