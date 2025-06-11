@@ -1,3 +1,12 @@
+/* pins in use */
+#define SDA_PIN 21
+#define SCL_PIN 22
+#define SCK_PIN 0
+#define MISO_PIN 15
+#define MOSI_PIN 2
+#define SS_PIN 16
+#define DIO0_PIN 17
+#define RST_PIN 5
 /*
                                                                        ███
                                                                       ███
@@ -10,7 +19,7 @@
   █████████████████  ███ ███████████████  █████████████████  ███████████████████             ███  ███████████████████    █  █  █  █  █
   ████████████████   ███  ██████████████  ████████████████   ███  ██████████████             ███  ███  ██████████████     █ █  █ █  █
   ███                ███             ███  ███    █████       ███            ████            ███   ███             ███      █ █ █ ███
-  ███                ███             ███  ███      █████     ███            ████         █████    ███             ███       ██████
+  ███                ███     cr8 check        ███  ███      █████     ███            ████         █████    ███             ███       ██████
   ███                ███             ███  ███        ████    ███            ████████████████      ███             ███         ███
                                                                                                                                █
 */
@@ -37,12 +46,27 @@
 #include "hal/uart_types.h"
 #include "i2c_bus.h"
 
-/* microSD drivers */
-#include "driver/sdspi_host.h"
-#include "esp_vfs_fat.h"
-#include "driver/spi_common.h"
-#include "sdmmc_cmd.h"
-#include "driver/sdmmc_host.h"
+
+/* @Errors */
+typedef enum{
+    STATUS_OK,
+    ERR_I2C_INIT_INVALID_ARG,
+    ERR_I2C_INIT_DRIVER_INSTALL,
+    ERR_BME_HANDLE_NULL,
+    ERR_BME_DEF_INIT_FAIL,
+    ERR_MPU_HANDLE_NULL,
+    ERR_MPU_CONFIG_FAIL,
+    ERR_MPU_WAKE_UP,
+    ERR_BME_UPDATE_PRESSURE_READ_FAIL,
+    ERR_BME_UPDATE_TEMPERATURE_READ_FAIL,
+    ERR_BME_UPDATE_HUMIDITY_READ_FAIL,
+    ERR_MPU_UPDATE_TEMPERATURE_READ_FAIL,
+    ERR_MPU_UPDATE_GYROSCOPE_READ_FAIL,
+    ERR_MPU_UPDATE_ACCELERATION_READ_FAIL
+
+} error_status_t;
+error_status_t GLOBAL_ERROR;
+void checkStatus();
 
 /* Custom headers */
 #include "misc/tickConversion.h"
@@ -50,32 +74,38 @@
 #include "components/minmea/minmea.h"
 
 
-#define I2C_MASTER_SDA_IO   (gpio_num_t)21
-#define I2C_MASTER_SCL_IO   (gpio_num_t)22
+#define I2C_MASTER_SDA_IO   (gpio_num_t)SDA_PIN
+#define I2C_MASTER_SCL_IO   (gpio_num_t)SCL_PIN
 #define I2C_MASTER_FREQ_HZ  100000
 //#define ESP_SLAVE_ADDR      0x28
 #define DATA_LENGTH         64
 #define BUFFER_LENGTH 1024
 #define UART_NUM UART_NUM_1
 
+
+
+
+// <--------------------------------------------------------------------------->
 /* !< SPI definitions */
 /* Changed in lora.h lib*/
-#define SCK 0
-#define MISO 15
-#define MOSI 2
-#define SS 16
-#define DIO0 17
-#define RST 5
-
-#define sdSS 4
-
-
-#define MOUNT_POINT "/sdcard"
+#define SCK SCK_PIN
+#define MISO MISO_PIN
+#define MOSI MOSI_PIN
+#define SS SS_PIN
+#define DIO0 DIO0_PIN
+#define RST RST_PIN
+// <--------------------------------------------------------------------------->
 
 
+// <--------------------------------------------------------------------------->
 /* @I2C */
 i2c_bus_handle_t i2cInit();
+// <--------------------------------------------------------------------------->
 
+
+
+
+// <--------------------------------------------------------------------------->
 /* @BME */
 #include "bme280.h"
 typedef struct{
@@ -85,7 +115,14 @@ typedef struct{
     float pressure;
 } bme_structure_t;
 void updateBME(bme280_handle_t bme2080_h, bme_structure_t* bme);
+// <--------------------------------------------------------------------------->
 
+
+
+
+
+
+// <--------------------------------------------------------------------------->
 /* @MPU */
 /*
  * mpu6050.h is using the new i2c driver!
@@ -98,7 +135,18 @@ typedef struct {
     mpu6050_temp_value_t temperature;
 } mpu_structure_t;
 void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu);
+// <--------------------------------------------------------------------------->
 
+
+
+
+
+
+
+
+
+
+// <--------------------------------------------------------------------------->
 /* @GPS */
 #define GPS_BUFFER 1024
 #define GPS_PIN 13
@@ -109,8 +157,15 @@ typedef struct{
 } gps_data_t;
 void gpsInit(void);
 void updateGPS(gps_data_t* gps_s);
+// <--------------------------------------------------------------------------->
 
 
+
+
+
+
+
+// <--------------------------------------------------------------------------->
 /* @LORA */
 typedef struct{
     int16_t temp_cx100;
@@ -132,61 +187,70 @@ typedef struct{
 void taskTx(void *pvParameters);
 sensor_packet_t build_sensor_packet(bme280_handle_t bme_h,
                                     mpu6050_handle_t mpu_h);
-/* @SYSTEM OUTPUT */
-#define START 0x1
-#define END 0x2
-#define ERROR 0x3
-#define WARNING 0x4
-#define SUCCESS 0x5
+// <--------------------------------------------------------------------------->
 
-#define LED_BUILTIN 33
-#define LED_GREEN 32
-#define LED_RED 25
-typedef struct{
-    uint8_t led;
-    uint8_t count;
-    uint16_t duration;
-} led_cmd_t;
-#define LED_QUEUE_LEN 10
-QueueHandle_t ledQueue;
-void logLEDSequence(const char* taskName, const uint8_t status);
-void blink(uint8_t led);
-void ledTask(void *pvParameters);
+
+
+// <--------------------------------------------------------------------------->
+
 
 typedef struct {
     bme280_handle_t bme280_h;
     mpu6050_handle_t mpu6050_h;
 } modules_handle_t;
-int systemInitializaton(modules_handle_t* handles);
+void systemInitializaton(modules_handle_t* handles);
 
-/* @microSD logging */
-void init_sdcard(void);
 
 /* @Error handling */
 void espHandleError(const char* tag, esp_err_t err);
 
 /* @Verification */
 uint8_t crc8(const uint8_t* data, size_t len);
+
+
+
+
+
+// <-------------------------------------------------------------------------->
 /* @TaskNames */
 static const char* bmeTag = "BME280";
 static const char* mpuTag = "MPU6050";
 static const char* gpsTag = "GPS";
 static const char* loraTag = "LORA";
+// <-------------------------------------------------------------------------->
 
 
+
+//#define lora_tx
 void app_main(void){
-    char* mainTask = "Main";
-
+    // @SYS INIT
     static modules_handle_t handles = {};
+    systemInitializaton(&handles);
+    bme_structure_t bme_s = {};
+    mpu_structure_t mpu_s = {};
+   // gps_data_t gps_s;
+    updateBME(handles.bme280_h, &bme_s);
+    updateMPU(handles.mpu6050_h, &mpu_s);
+//    updateGPS(&gps_s);
+#if LOG_MODULES
+    ESP_LOGI(bmeTag, "Temperature: %.2f", bme_s.temperature);
+    ESP_LOGI(bmeTag, "Humidity: %.2f", bme_s.humidity);
+    ESP_LOGI(bmeTag, "Pressure: %.2f", bme_s.pressure);
 
-    if(systemInitializaton(&handles) == 1){
-        ESP_LOGI(mainTask, "System initialization successfull.");
-        logLEDSequence("Init", SUCCESS);
-    }else{
-        ESP_LOGE(mainTask, "System initialization unsuccessfull.");
-        logLEDSequence("Init", ERROR);
-    }
-   // setup the lora module
+    ESP_LOGI(mpuTag, "MPU Temperature: %.2f",mpu_s.temperature.temp);
+    ESP_LOGI(mpuTag, "acc_x: %.2f\tacc_y: %.2f\tacc_z: %.2f",
+            mpu_s.acceleration.acce_x,
+            mpu_s.acceleration.acce_y,
+            mpu_s.acceleration.acce_z);
+    ESP_LOGI(mpuTag, "gyro_x: %.2f\tgyro_y: %.2f\tgyro_z: %.2f",
+            mpu_s.gyroscope.gyro_x,
+            mpu_s.gyroscope.gyro_y,
+            mpu_s.gyroscope.gyro_z);
+ //   ESP_LOGI(gpsTag, "GPS_LON: %f\tGPS_LAT: %f\tGPS_ALT: %f", gps_s.lon, gps_s.lat, gps_s.alt);
+#endif
+
+#ifdef lora_tx
+   // @LORA SETUP
 	if (lora_init() == 0) {
 		ESP_LOGE(loraTag, "Does not recognize the module");
 		while(1) {
@@ -213,50 +277,77 @@ void app_main(void){
 	//int sf = lora_get_spreading_factor();
 	ESP_LOGI(pcTaskGetName(NULL), "spreading_factor=%d", sf);
     xTaskCreate(&taskTx, "TX", 1024*3, &handles, 5, NULL);
+#endif
 }
 
-int systemInitializaton(modules_handle_t* handles){
+void systemInitializaton(modules_handle_t* handles){
+// -----------------------------------------------------------
     esp_err_t err;
+    GLOBAL_ERROR = STATUS_OK;
     char* sysInitTask = "System Initialization";
-    ESP_LOGI(sysInitTask , "Starting Prada Initializaton...");
-    gpio_reset_pin(LED_BUILTIN);
-    gpio_reset_pin(LED_RED);
-    gpio_reset_pin(LED_GREEN);
-    gpio_set_direction(LED_BUILTIN, GPIO_MODE_OUTPUT);
-    gpio_set_direction(LED_GREEN, GPIO_MODE_OUTPUT);
-    gpio_set_direction(LED_RED, GPIO_MODE_OUTPUT);
-    ledQueue= xQueueCreate(LED_QUEUE_LEN, sizeof(led_cmd_t));
-    xTaskCreate(ledTask, "LED_CONTROLLER", 2048, NULL, 10, NULL);
-    logLEDSequence(sysInitTask, SUCCESS);
+    ESP_LOGI(sysInitTask , "Starting Parada Initializaton...");
+// -----------------------------------------------------------
+
 
     // >! I2C Initialization
+// -----------------------------------------------------------
     i2c_bus_handle_t i2cBusHandle = i2cInit();
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+
+
+    /*
     // >! GPS Initialization
+// -----------------------------------------------------------
     gpsInit();
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+    */
+
+
     // >>! BME280 Initializaton
+// -----------------------------------------------------------
     handles->bme280_h = bme280_create(i2cBusHandle,
                                         BME280_I2C_ADDRESS_DEFAULT);
-    TEST_ASSERT_NOT_NULL_MESSAGE(handles->bme280_h,
-            "BME280 Handle is NULL.");
+    if(handles->bme280_h == NULL)
+        GLOBAL_ERROR = ERR_BME_HANDLE_NULL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
     err = bme280_default_init(handles->bme280_h);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "BME280 Default initialization failed.");
+    if(err != ESP_OK)
+        GLOBAL_ERROR = ERR_BME_DEF_INIT_FAIL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
 
     // >>! MPU6050 Initialization
+// -----------------------------------------------------------
     handles->mpu6050_h = mpu6050_create(i2cBusHandle,
                                                 MPU6050_I2C_ADDRESS);
-    TEST_ASSERT_NOT_NULL_MESSAGE(handles->mpu6050_h,
-            "MPU6050 Handle is NULL.");
+    if(handles->mpu6050_h == NULL)
+        GLOBAL_ERROR = ERR_MPU_HANDLE_NULL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
     err = mpu6050_config(handles->mpu6050_h,
             ACCE_FS_4G, GYRO_FS_500DPS);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Config failed.");
+    if(err != ESP_OK)
+        GLOBAL_ERROR = ERR_MPU_CONFIG_FAIL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
     err = mpu6050_wake_up(handles->mpu6050_h);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err, "MPU6050 Waking up failed.");
-
-    return 1;
+    if(err != ESP_OK)
+        GLOBAL_ERROR = ERR_MPU_WAKE_UP;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
 }
 
-/* @I2C Definition */
+
+
+
+
+
+
+// <--------------------------------------------------------------------------->
+/* @I2C definition */
 i2c_bus_handle_t i2cInit(){
     i2c_bus_handle_t i2c_bus = NULL;
     i2c_config_t conf = {
@@ -268,71 +359,86 @@ i2c_bus_handle_t i2cInit(){
         .master.clk_speed = I2C_MASTER_FREQ_HZ,
     };
     i2c_bus = i2c_bus_create(I2C_NUM_0, &conf);
-    TEST_ASSERT_NOT_NULL_MESSAGE(i2c_bus, "I2C Bus initialization failed.");
+    if(i2c_bus == NULL)
+        GLOBAL_ERROR = ERR_I2C_INIT_DRIVER_INSTALL;
     return i2c_bus;
 }
+// <--------------------------------------------------------------------------->
 
 void updateBME(bme280_handle_t bme2080_h, bme_structure_t* bme){
+    GLOBAL_ERROR = STATUS_OK;
     esp_err_t err;
     vTaskDelay(milliseconds(300));
+
     ESP_LOGI(bmeTag, "Reading pressure...");
     err = bme280_read_pressure(bme2080_h, &bme->pressure);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "BME280 Failed to read the pressure.");
+    if(err != ESP_OK)
+        GLOBAL_ERROR = ERR_BME_UPDATE_PRESSURE_READ_FAIL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+
     ESP_LOGI(bmeTag, "Reading humidity...");
     err = bme280_read_humidity(bme2080_h, &bme->humidity);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "BME280 Failed to read the humidity.");
+    if(err != ESP_OK)
+        GLOBAL_ERROR = ERR_BME_UPDATE_HUMIDITY_READ_FAIL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+
     vTaskDelay(milliseconds(300));
+
     ESP_LOGI(bmeTag, "Reading temperature...");
     err = bme280_read_temperature(bme2080_h, &bme->temperature);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "BME280 Failed to read the temperature.");
+    if(err != ESP_OK)
+        GLOBAL_ERROR = ERR_BME_UPDATE_TEMPERATURE_READ_FAIL;
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+
     vTaskDelay(milliseconds(300));
     ESP_LOGI(bmeTag, "bme2080_h: %p", bme2080_h);
 
 }
+// <--------------------------------------------------------------------------->
+
+
+
 
 void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu){
     esp_err_t err;
     err = mpu6050_get_acce(mpu6050_h, &mpu->acceleration);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "MPU6050 Failed to read the acceleration.");
     if(err != ESP_OK){
-        logLEDSequence("MPU acc", ERROR);
+        GLOBAL_ERROR = ERR_MPU_UPDATE_ACCELERATION_READ_FAIL;
     }
-    vTaskDelay(milliseconds(100));
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+    vTaskDelay(milliseconds(50));
     err = mpu6050_get_gyro(mpu6050_h, &mpu->gyroscope);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "MPU6050 Failed to read the gyroscope.");
     if(err != ESP_OK){
-        logLEDSequence("MPU gyro", ERROR);
+        GLOBAL_ERROR = ERR_MPU_UPDATE_GYROSCOPE_READ_FAIL;
     }
-    vTaskDelay(milliseconds(100));
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+    vTaskDelay(milliseconds(50));
     err = mpu6050_get_temp(mpu6050_h, &mpu->temperature);
-    TEST_ASSERT_EQUAL_MESSAGE(ESP_OK, err,
-            "MPU6050 Failed to read the temperature.");
     if(err != ESP_OK){
-        logLEDSequence("MPU temp", ERROR);
+        GLOBAL_ERROR = ERR_MPU_UPDATE_TEMPERATURE_READ_FAIL;
     }
-    vTaskDelay(milliseconds(100));
+    checkStatus();
+    GLOBAL_ERROR = STATUS_OK;
+    vTaskDelay(milliseconds(50));
 }
-void espHandleError(const char* tag, esp_err_t err){
-    if(err != ESP_OK){
-        ESP_LOGE(tag, " failed: %s", esp_err_to_name(err));
-        logLEDSequence(tag, ERROR);
-    }
-}
+
+// <--------------------------------------------------------------------------->
+
 
 void taskTx(void *pvParameters){
     ESP_LOGI(loraTag, "Transmit start");
     modules_handle_t* handles = (modules_handle_t*)pvParameters;
     while(1) {
-        ESP_LOGI(loraTag, "bme handle at TX loop: %p", handles->bme280_h);
+        //ESP_LOGI(loraTag, "bme handle at TX loop: %p", handles->bme280_h);
         sensor_packet_t packet_tx = build_sensor_packet(handles->bme280_h, handles->mpu6050_h);
         lora_send_packet((uint8_t* )&packet_tx,
                 sizeof(sensor_packet_t));
-        logLEDSequence("LoraTX", SUCCESS);
+        ESP_LOGI(loraTag, "PACKET SENT SUCCESSFULLY!");
         int lost = lora_packet_lost();
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
@@ -340,8 +446,14 @@ void taskTx(void *pvParameters){
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
     ESP_LOGI(loraTag, "Transmit end");
-    logLEDSequence("Lora", END);
 }
+
+
+
+// <--------------------------------------------------------------------------->
+
+
+
 
 void gpsInit(void){
     const uart_port_t uart_num = UART_NUM_2;
@@ -357,6 +469,14 @@ void gpsInit(void){
                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_driver_install(uart_num, GPS_BUFFER, 0, 0, NULL, 0));
 }
+
+
+
+
+// <--------------------------------------------------------------------------->
+
+
+
 
 void updateGPS(gps_data_t* gps_s){
     uint8_t gpsBuffer[GPS_BUFFER];
@@ -394,70 +514,6 @@ void updateGPS(gps_data_t* gps_s){
         }
     }
     *gps_s = _gps_s;
-}
-
-void logLEDSequence(const char* taskName, const uint8_t status) {
-    led_cmd_t cmd = {0};
-
-    switch (status) {
-        case START:
-            cmd.led = LED_GREEN;
-            cmd.count = 1;
-            cmd.duration = 100;
-            xQueueSend(ledQueue, &cmd, 0);
-
-            cmd.led= LED_RED;
-            xQueueSend(ledQueue, &cmd, 0);
-
-            cmd.led = LED_GREEN | LED_RED;
-            xQueueSend(ledQueue, &cmd, 0);
-
-            cmd.led = LED_BUILTIN;
-            xQueueSend(ledQueue, &cmd, 0);
-            break;
-
-        case END:
-            cmd.led = LED_RED;
-            cmd.count = 3;
-            cmd.duration = 100;
-            xQueueSend(ledQueue, &cmd, 0);
-            break;
-        case WARNING:
-            cmd.led = LED_GREEN | LED_RED;
-            cmd.count = 5;
-            cmd.duration = 100;
-            xQueueSend(ledQueue, &cmd, 0);
-            break;
-
-        case ERROR:
-        case SUCCESS:
-            cmd.led = LED_GREEN;
-            cmd.count = 3;
-            cmd.duration = 100;
-            xQueueSend(ledQueue, &cmd, 0);
-            break;
-
-        default:
-            ESP_LOGW(taskName, "Not yet implemented.");
-            break;
-    }
-}
-void ledTask(void *pvParameters){
-    led_cmd_t cmd;
-    while (1) {
-        if (xQueueReceive(ledQueue, &cmd, portMAX_DELAY)) {
-            for (int i = 0; i < cmd.count; ++i) {
-                if (cmd.led & LED_GREEN) gpio_set_level(LED_GREEN, 1);
-                if (cmd.led & LED_RED)   gpio_set_level(LED_RED, 1);
-                if (cmd.led & LED_BUILTIN)  gpio_set_level(LED_BUILTIN, 1);
-                vTaskDelay(pdMS_TO_TICKS(cmd.duration));
-                if (cmd.led & LED_GREEN) gpio_set_level(LED_GREEN, 0);
-                if (cmd.led & LED_RED)   gpio_set_level(LED_RED, 0);
-                if (cmd.led & LED_BUILTIN)  gpio_set_level(LED_BUILTIN, 0);
-                vTaskDelay(pdMS_TO_TICKS(cmd.duration));
-            }
-        }
-    }
 }
 
 sensor_packet_t build_sensor_packet(
@@ -511,7 +567,6 @@ sensor_packet_t build_sensor_packet(
     return packet;
 }
 
-// let's hope this is correct
 uint8_t crc8(const uint8_t *data, size_t len) {
     uint8_t crc = 0x00;
     for (size_t i = 0; i < len; ++i) {
@@ -522,34 +577,36 @@ uint8_t crc8(const uint8_t *data, size_t len) {
     }
     return crc;
 }
+/*
 
-// ???
-void init_sdcard(void){
-    esp_err_t ret;
-    ESP_LOGI("microsd", "initing sd card using spi");
+#define CONFIG_DIO0_GPIO 26
 
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    host.slot = HSPI_HOST;
-    host.flags = SDMMC_HOST_FLAG_SPI;
+#include <stdio.h>
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "lora.h"
 
-    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot_config.gpio_cs = sdSS;
-    slot_config.host_id = host.slot;
+void app_main(void) {
+    printf("\n📡 Initializing LoRa...\n");
 
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = false,
-        .max_files = 5,
-        .allocation_unit_size = 16 * 1024
-    };
-        sdmmc_card_t* card;
-    ret = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &host, &slot_config, &mount_config, &card);
+    lora_init();
+    lora_set_frequency(433E6);        // Set frequency to 433 MHz
+    lora_enable_crc();
+    lora_set_tx_power(17);            // Set max transmit power
 
-    if (ret != ESP_OK) {
-        ESP_LOGE("microsd", "Failed to mount filesystem. Error: %s", esp_err_to_name(ret));
-        return;
+    while (1) {
+        const char *message = "posilam !";
+        printf("📤 Sending: %s\n", message);
+
+        lora_send_packet((uint8_t *)message, strlen(message));
+
+        vTaskDelay(pdMS_TO_TICKS(2000)); // wait 2 seconds
     }
-
-    ESP_LOGI("microsd", "SD card mounted successfully.");
-    sdmmc_card_print_info(stdout, card);
-
+}
+*/
+void checkStatus(){
+    if(GLOBAL_ERROR != STATUS_OK){
+        ESP_LOGE("ERROR", ,"",GLOBAL_ERROR);
+    }
 }
