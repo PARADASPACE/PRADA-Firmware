@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/wtf/Documents/esp-idf/projects/PRADA-Firmware
+CMAKE_SOURCE_DIR = /home/wtf/Documents/esp-idf/projects/raketa
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/wtf/Documents/esp-idf/projects/PRADA-Firmware
+CMAKE_BINARY_DIR = /home/wtf/Documents/esp-idf/projects/raketa
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -132,9 +132,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/wtf/Documents/esp-idf/projects/PRADA-Firmware/CMakeFiles /home/wtf/Documents/esp-idf/projects/PRADA-Firmware//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/wtf/Documents/esp-idf/projects/raketa/CMakeFiles /home/wtf/Documents/esp-idf/projects/raketa//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/wtf/Documents/esp-idf/projects/PRADA-Firmware/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/wtf/Documents/esp-idf/projects/raketa/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -394,19 +394,6 @@ uf2-app: cmake_check_build_system
 uf2-app/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/uf2-app.dir/build.make CMakeFiles/uf2-app.dir/build
 .PHONY : uf2-app/fast
-
-#=============================================================================
-# Target rules for targets named __ldgen_output_sections.ld
-
-# Build rule for target.
-__ldgen_output_sections.ld: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __ldgen_output_sections.ld
-.PHONY : __ldgen_output_sections.ld
-
-# fast build rule for target.
-__ldgen_output_sections.ld/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/__ldgen_output_sections.ld.dir/build.make CMakeFiles/__ldgen_output_sections.ld.dir/build
-.PHONY : __ldgen_output_sections.ld/fast
 
 #=============================================================================
 # Target rules for targets named __idf_xtensa
@@ -940,6 +927,19 @@ sections.ld.in: cmake_check_build_system
 sections.ld.in/fast:
 	$(MAKE) $(MAKESILENT) -f esp-idf/esp_system/CMakeFiles/sections.ld.in.dir/build.make esp-idf/esp_system/CMakeFiles/sections.ld.in.dir/build
 .PHONY : sections.ld.in/fast
+
+#=============================================================================
+# Target rules for targets named __ldgen_output_sections.ld
+
+# Build rule for target.
+__ldgen_output_sections.ld: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __ldgen_output_sections.ld
+.PHONY : __ldgen_output_sections.ld
+
+# fast build rule for target.
+__ldgen_output_sections.ld/fast:
+	$(MAKE) $(MAKESILENT) -f esp-idf/esp_system/CMakeFiles/__ldgen_output_sections.ld.dir/build.make esp-idf/esp_system/CMakeFiles/__ldgen_output_sections.ld.dir/build
+.PHONY : __ldgen_output_sections.ld/fast
 
 #=============================================================================
 # Target rules for targets named __idf_esp_common
@@ -1514,19 +1514,6 @@ __idf_esp_driver_ledc/fast:
 .PHONY : __idf_esp_driver_ledc/fast
 
 #=============================================================================
-# Target rules for targets named __idf_esp_driver_twai
-
-# Build rule for target.
-__idf_esp_driver_twai: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __idf_esp_driver_twai
-.PHONY : __idf_esp_driver_twai
-
-# fast build rule for target.
-__idf_esp_driver_twai/fast:
-	$(MAKE) $(MAKESILENT) -f esp-idf/esp_driver_twai/CMakeFiles/__idf_esp_driver_twai.dir/build.make esp-idf/esp_driver_twai/CMakeFiles/__idf_esp_driver_twai.dir/build
-.PHONY : __idf_esp_driver_twai/fast
-
-#=============================================================================
 # Target rules for targets named __idf_driver
 
 # Build rule for target.
@@ -1603,6 +1590,19 @@ __idf_esp_driver_touch_sens: cmake_check_build_system
 __idf_esp_driver_touch_sens/fast:
 	$(MAKE) $(MAKESILENT) -f esp-idf/esp_driver_touch_sens/CMakeFiles/__idf_esp_driver_touch_sens.dir/build.make esp-idf/esp_driver_touch_sens/CMakeFiles/__idf_esp_driver_touch_sens.dir/build
 .PHONY : __idf_esp_driver_touch_sens/fast
+
+#=============================================================================
+# Target rules for targets named __idf_esp_driver_twai
+
+# Build rule for target.
+__idf_esp_driver_twai: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 __idf_esp_driver_twai
+.PHONY : __idf_esp_driver_twai
+
+# fast build rule for target.
+__idf_esp_driver_twai/fast:
+	$(MAKE) $(MAKESILENT) -f esp-idf/esp_driver_twai/CMakeFiles/__idf_esp_driver_twai.dir/build.make esp-idf/esp_driver_twai/CMakeFiles/__idf_esp_driver_twai.dir/build
+.PHONY : __idf_esp_driver_twai/fast
 
 #=============================================================================
 # Target rules for targets named __idf_esp_eth

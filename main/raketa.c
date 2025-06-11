@@ -7,6 +7,8 @@
 #define SS_PIN 16
 #define DIO0_PIN 17
 #define RST_PIN 5
+
+#define GPS_TX_PIN 13
 /*
                                                                        ███
                                                                       ███
@@ -149,7 +151,7 @@ void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu);
 // <--------------------------------------------------------------------------->
 /* @GPS */
 #define GPS_BUFFER 1024
-#define GPS_PIN 13
+#define GPS_PIN GPS_TX_PIN
 typedef struct{
     float lat;
     float lon;
@@ -228,15 +230,18 @@ void app_main(void){
     systemInitializaton(&handles);
     bme_structure_t bme_s = {};
     mpu_structure_t mpu_s = {};
-   // gps_data_t gps_s;
+    gps_data_t gps_s;
+while(true){
+
     updateBME(handles.bme280_h, &bme_s);
     updateMPU(handles.mpu6050_h, &mpu_s);
-//    updateGPS(&gps_s);
+    updateGPS(&gps_s);
 #if LOG_MODULES
     ESP_LOGI(bmeTag, "Temperature: %.2f", bme_s.temperature);
     ESP_LOGI(bmeTag, "Humidity: %.2f", bme_s.humidity);
     ESP_LOGI(bmeTag, "Pressure: %.2f", bme_s.pressure);
 
+    ESP_LOGI(mpuTag, "");
     ESP_LOGI(mpuTag, "MPU Temperature: %.2f",mpu_s.temperature.temp);
     ESP_LOGI(mpuTag, "acc_x: %.2f\tacc_y: %.2f\tacc_z: %.2f",
             mpu_s.acceleration.acce_x,
@@ -246,8 +251,10 @@ void app_main(void){
             mpu_s.gyroscope.gyro_x,
             mpu_s.gyroscope.gyro_y,
             mpu_s.gyroscope.gyro_z);
- //   ESP_LOGI(gpsTag, "GPS_LON: %f\tGPS_LAT: %f\tGPS_ALT: %f", gps_s.lon, gps_s.lat, gps_s.alt);
+    //ESP_LOGI(gpsTag, "GPS_LON: %f\tGPS_LAT: %f\tGPS_ALT: %f", gps_s.lon, gps_s.lat, gps_s.alt);
 #endif
+    vTaskDelay(seconds(1));
+}
 
 #ifdef lora_tx
    // @LORA SETUP
@@ -296,13 +303,11 @@ void systemInitializaton(modules_handle_t* handles){
     GLOBAL_ERROR = STATUS_OK;
 
 
-    /*
     // >! GPS Initialization
 // -----------------------------------------------------------
     gpsInit();
     checkStatus();
     GLOBAL_ERROR = STATUS_OK;
-    */
 
 
     // >>! BME280 Initializaton
@@ -480,42 +485,34 @@ void gpsInit(void){
 
 void updateGPS(gps_data_t* gps_s){
     uint8_t gpsBuffer[GPS_BUFFER];
-    char line[MINMEA_MAX_SENTENCE_LENGTH] = {0};
-    int line_pos = 0;
     memset(gpsBuffer, 0, GPS_BUFFER);
     gps_data_t _gps_s;
     int len = uart_read_bytes(UART_NUM_2, gpsBuffer, GPS_BUFFER, 100/portTICK_PERIOD_MS);
-    if(len>0){
-        for(int i = 0; i < len; i++){
-            char c = (char)gpsBuffer[i];
-            if(c == '\r' || c == '\n'){
-                line[line_pos] = '\0';
-                line_pos = 0;
-                if(!minmea_check(line, true))
-                    continue;
-                switch(minmea_sentence_id(line, false)){
-                    case MINMEA_SENTENCE_GGA:
-                        {
-                            struct minmea_sentence_gga frame;
-                            ESP_LOGI("GPS", "RAW Line: %s", line);
-                            if(minmea_parse_gga(&frame, line)){
-                                _gps_s.lat = minmea_tocoord(&frame.latitude);
-                                _gps_s.lon = minmea_tocoord(&frame.longitude);
-                                _gps_s.alt = minmea_tofloat(&frame.altitude);
-                            }
-                            break;
-                        }
-                    default:
-                        break;
+    if (len > 0) {
+        ESP_LOGI("GPS", "Received %d bytes from GPS:", len);
+        gpsBuffer[len] = '\0';
+        char *line = strtok((char*)gpsBuffer, "\n");
+        while(line != NULL){
+            printf("NMEA line: %s\n", line);
+              if (minmea_check(line, false)) {
+                if (minmea_sentence_id(line, false) == MINMEA_SENTENCE_GGA) {
+                    struct minmea_sentence_gga frame;
+                    if (minmea_parse_gga(&frame, line)) {
+                        printf("Time: %02d:%02d:%02d\n", frame.time.hours, frame.time.minutes, frame.time.seconds);
+                        printf("Lat: %f\n", minmea_tocoord(&frame.latitude));
+                        printf("Lon: %f\n", minmea_tocoord(&frame.longitude));
+                        printf("Altitude: %f meters\n", frame.altitude.value / 1000.0);
+                    } else {
+                        printf("Failed to parse GGA sentence\n");
+                    }
                 }
-            }else if(line_pos < MINMEA_MAX_SENTENCE_LENGTH -1){
-                line[line_pos++] = c;
+            } else {
+                printf("Invalid checksum or format\n");
             }
+            line = strtok(NULL, "\n");
         }
     }
-    *gps_s = _gps_s;
 }
-
 sensor_packet_t build_sensor_packet(
         bme280_handle_t bme_h,
         mpu6050_handle_t mpu_h
@@ -566,7 +563,6 @@ sensor_packet_t build_sensor_packet(
 
     return packet;
 }
-
 uint8_t crc8(const uint8_t *data, size_t len) {
     uint8_t crc = 0x00;
     for (size_t i = 0; i < len; ++i) {
