@@ -223,11 +223,13 @@ static const char* loraTag = "LORA";
 
 
 
-//#define lora_tx
+#define lora_tx
 void app_main(void){
     // @SYS INIT
     static modules_handle_t handles = {};
     systemInitializaton(&handles);
+
+#ifndef lora_tx
     bme_structure_t bme_s = {};
     mpu_structure_t mpu_s = {};
     gps_data_t gps_s;
@@ -236,7 +238,6 @@ while(true){
     updateBME(handles.bme280_h, &bme_s);
     updateMPU(handles.mpu6050_h, &mpu_s);
     updateGPS(&gps_s);
-#if LOG_MODULES
     ESP_LOGI(bmeTag, "Temperature: %.2f", bme_s.temperature);
     ESP_LOGI(bmeTag, "Humidity: %.2f", bme_s.humidity);
     ESP_LOGI(bmeTag, "Pressure: %.2f", bme_s.pressure);
@@ -251,13 +252,14 @@ while(true){
             mpu_s.gyroscope.gyro_x,
             mpu_s.gyroscope.gyro_y,
             mpu_s.gyroscope.gyro_z);
-    //ESP_LOGI(gpsTag, "GPS_LON: %f\tGPS_LAT: %f\tGPS_ALT: %f", gps_s.lon, gps_s.lat, gps_s.alt);
-#endif
+    ESP_LOGI(gpsTag, "GPS_LON: %f\tGPS_LAT: %f\tGPS_ALT: %f", gps_s.lon, gps_s.lat, gps_s.alt);
     vTaskDelay(seconds(1));
 }
+#endif
 
 #ifdef lora_tx
    // @LORA SETUP
+   //
 	if (lora_init() == 0) {
 		ESP_LOGE(loraTag, "Does not recognize the module");
 		while(1) {
@@ -283,7 +285,7 @@ while(true){
 	//lora_set_spreading_factor(CONFIG_SF_RATE);
 	//int sf = lora_get_spreading_factor();
 	ESP_LOGI(pcTaskGetName(NULL), "spreading_factor=%d", sf);
-    xTaskCreate(&taskTx, "TX", 1024*3, &handles, 5, NULL);
+    xTaskCreate(&taskTx, "TX", 2048*3, &handles, 5, NULL);
 #endif
 }
 
@@ -438,6 +440,21 @@ void updateMPU(mpu6050_handle_t mpu6050_h, mpu_structure_t* mpu){
 void taskTx(void *pvParameters){
     ESP_LOGI(loraTag, "Transmit start");
     modules_handle_t* handles = (modules_handle_t*)pvParameters;
+    /*
+    printf("\n📡 Initializing LoRa...\n");
+
+    lora_init();
+    lora_set_frequency(433E6);        // Set frequency to 433 MHz
+    lora_enable_crc();
+    lora_set_tx_power(17);            // Set max transmit power
+    while (1) {
+        const char *message = "posilam !";
+        printf("📤 Sending: %s\n", message);
+
+        lora_send_packet((uint8_t *)message, strlen(message));
+
+        vTaskDelay(pdMS_TO_TICKS(2000)); // wait 2 seconds
+    }*/
     while(1) {
         //ESP_LOGI(loraTag, "bme handle at TX loop: %p", handles->bme280_h);
         sensor_packet_t packet_tx = build_sensor_packet(handles->bme280_h, handles->mpu6050_h);
@@ -450,6 +467,7 @@ void taskTx(void *pvParameters){
         }
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
+
     ESP_LOGI(loraTag, "Transmit end");
 }
 
@@ -484,7 +502,7 @@ void gpsInit(void){
 
 
 void updateGPS(gps_data_t* gps_s){
-    uint8_t gpsBuffer[GPS_BUFFER];
+    uint8_t* gpsBuffer = malloc(GPS_BUFFER);
     memset(gpsBuffer, 0, GPS_BUFFER);
     gps_data_t _gps_s;
     int len = uart_read_bytes(UART_NUM_2, gpsBuffer, GPS_BUFFER, 100/portTICK_PERIOD_MS);
@@ -498,28 +516,38 @@ void updateGPS(gps_data_t* gps_s){
                 if (minmea_sentence_id(line, false) == MINMEA_SENTENCE_GGA) {
                     struct minmea_sentence_gga frame;
                     if (minmea_parse_gga(&frame, line)) {
-                        printf("Time: %02d:%02d:%02d\n", frame.time.hours, frame.time.minutes, frame.time.seconds);
-                        printf("Lat: %f\n", minmea_tocoord(&frame.latitude));
-                        printf("Lon: %f\n", minmea_tocoord(&frame.longitude));
-                        printf("Altitude: %f meters\n", frame.altitude.value / 1000.0);
+                        //printf("Time: %02d:%02d:%02d\n", frame.time.hours, frame.time.minutes, frame.time.seconds);
+                        //printf("Lat: %f\n", minmea_tocoord(&frame.latitude));
+                        //printf("Lon: %f\n", minmea_tocoord(&frame.longitude));
+                        //printf("Altitude: %f meters\n", (double)frame.altitude.value);
+                        _gps_s.alt = frame.altitude.value;
+                        _gps_s.lat = minmea_tocoord(&frame.latitude);
+                        _gps_s.lon = minmea_tocoord(&frame.longitude);
                     } else {
-                        printf("Failed to parse GGA sentence\n");
+                       // printf("Failed to parse GGA sentence\n");
                     }
                 }
             } else {
                 printf("Invalid checksum or format\n");
+                _gps_s.alt = 0;
+                _gps_s.lat = 0;
+                _gps_s.lon = 0;
             }
             line = strtok(NULL, "\n");
         }
     }
+    free(gpsBuffer);
+    *gps_s = _gps_s;
 }
+
+
 sensor_packet_t build_sensor_packet(
         bme280_handle_t bme_h,
         mpu6050_handle_t mpu_h
         ){
-    bme_structure_t bme_s = {};
-    mpu_structure_t mpu_s = {};
-    gps_data_t gps_s;
+    static bme_structure_t bme_s = {};
+    static mpu_structure_t mpu_s = {};
+    static gps_data_t gps_s;
     updateBME(bme_h, &bme_s);
     updateMPU(mpu_h, &mpu_s);
     updateGPS(&gps_s);
@@ -544,13 +572,13 @@ sensor_packet_t build_sensor_packet(
         .humidity_px10 = (int16_t)(bme_s.humidity*10),
         .pressure_hPax10 = (int16_t)(bme_s.pressure*10),
 
-        .acce_x = ((int16_t)mpu_s.acceleration.acce_x *1000),
-        .acce_y = ((int16_t)mpu_s.acceleration.acce_y *1000),
-        .acce_z = ((int16_t)mpu_s.acceleration.acce_z *1000),
+        .acce_x = ((int16_t)(mpu_s.acceleration.acce_x *1000)),
+        .acce_y = ((int16_t)(mpu_s.acceleration.acce_y *1000)),
+        .acce_z = ((int16_t)(mpu_s.acceleration.acce_z *1000)),
 
-        .gyro_x = ((int16_t)mpu_s.gyroscope.gyro_x*10),
-        .gyro_y = ((int16_t)mpu_s.gyroscope.gyro_y*10),
-        .gyro_z = ((int16_t)mpu_s.gyroscope.gyro_z*10),
+        .gyro_x = ((int16_t)(mpu_s.gyroscope.gyro_x*100)),
+        .gyro_y = ((int16_t)(mpu_s.gyroscope.gyro_y*100)),
+        .gyro_z = ((int16_t)(mpu_s.gyroscope.gyro_z*100)),
         .mpu_temp_cx100 = (int16_t)(mpu_s.temperature.temp * 100),
         .gps_lat_microdeg = (int32_t)(gps_s.lat*1e6),
         .gps_lon_microdeg = (int32_t)(gps_s.lon*1e6),
@@ -573,34 +601,7 @@ uint8_t crc8(const uint8_t *data, size_t len) {
     }
     return crc;
 }
-/*
 
-#define CONFIG_DIO0_GPIO 26
-
-#include <stdio.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "lora.h"
-
-void app_main(void) {
-    printf("\n📡 Initializing LoRa...\n");
-
-    lora_init();
-    lora_set_frequency(433E6);        // Set frequency to 433 MHz
-    lora_enable_crc();
-    lora_set_tx_power(17);            // Set max transmit power
-
-    while (1) {
-        const char *message = "posilam !";
-        printf("📤 Sending: %s\n", message);
-
-        lora_send_packet((uint8_t *)message, strlen(message));
-
-        vTaskDelay(pdMS_TO_TICKS(2000)); // wait 2 seconds
-    }
-}
-*/
 void checkStatus(){
     if(GLOBAL_ERROR != STATUS_OK){
         ESP_LOGE("ERROR", ,"",GLOBAL_ERROR);
