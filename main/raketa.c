@@ -9,6 +9,8 @@
 #define RST_PIN 5
 
 #define GPS_TX_PIN 13
+
+#define EJECT_PIN 3
 /*
                                                                        ███
                                                                       ███
@@ -21,7 +23,7 @@
   █████████████████  ███ ███████████████  █████████████████  ███████████████████             ███  ███████████████████    █  █  █  █  █
   ████████████████   ███  ██████████████  ████████████████   ███  ██████████████             ███  ███  ██████████████     █ █  █ █  █
   ███                ███             ███  ███    █████       ███            ████            ███   ███             ███      █ █ █ ███
-  ███                ███     cr8 check        ███  ███      █████     ███            ████         █████    ███             ███       ██████
+  ███                ███             ███  ███      █████     ███            ████         █████    ███             ███       ██████
   ███                ███             ███  ███        ████    ███            ████████████████      ███             ███         ███
                                                                                                                                █
 */
@@ -209,6 +211,8 @@ void espHandleError(const char* tag, esp_err_t err);
 /* @Verification */
 uint8_t crc8(const uint8_t* data, size_t len);
 
+/* @Ejection charge */
+void eject_parachute();
 
 
 
@@ -219,12 +223,15 @@ static const char* bmeTag = "BME280";
 static const char* mpuTag = "MPU6050";
 static const char* gpsTag = "GPS";
 static const char* loraTag = "LORA";
+static const char* ejectionTag ="EJECTION";
 // <-------------------------------------------------------------------------->
 
 
 
 #define lora_tx
 void app_main(void){
+    gpio_set_direction(EJECT_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(EJECT_PIN, 0);
     // @SYS INIT
     static modules_handle_t handles = {};
     systemInitializaton(&handles);
@@ -606,4 +613,8 @@ void checkStatus(){
     if(GLOBAL_ERROR != STATUS_OK){
         ESP_LOGE("ERROR", ,"",GLOBAL_ERROR);
     }
+}
+void eject_parachute(){
+    gpio_set_level(EJECT_PIN, 1);
+    ESP_LOGI(ejectionTag," ejection charge activated!!!");
 }
