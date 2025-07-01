@@ -1,0 +1,284 @@
+[0;32mI (5224) BME280: Reading pressure...[0m
+[0;32mI (5224) BME280: Reading humidity...[0m
+[0;32mI (5524) BME280: Reading temperature...[0m
+[0;32mI (5824) BME280: bme2080_h: 0x3ffb5bdc[0m
+[0;32mI (6074) GPS: Received 648 bytes from GPS:[0m
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (6144) BME280: Temperature: 24.59[0m
+[0;32mI (6144) BME280: Humidity: 39.29[0m
+[0;32mI (6154) BME280: Pressure: 986.76[0m
+[0;32mI (6154) MPU6050: MPU Temperature: 25.61[0m
+[0;32mI (6154) MPU6050: acc_x: 0.33	acc_y: 0.91	acc_z: 0.28[0m
+[0;32mI (6164) MPU6050: gyro_x: -3.85	gyro_y: -8.55	gyro_z: 4.40[0m
+[0;32mI (6164) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (6254) LORA: PACKET SENT SUCCESSFULLY![0m
+[0;32mI (6254) ACCELERATION after: X: 0.33  Y: 0.90  Z: 0.28[0m
+[0;32mI (6254) ACCELERATION: 3D ACCELERATION!!!!: 0.061299[0m
+e...
+[0;32mI (9554) BME280: Reading humidity...[0m
+[0;32mI (9854) BME280: Reading temperature...[0m
+[0;32mI (10154) BME280: bme2080_h: 0x3ffb5bdc[0m
+[0;32mI (10404) GPS: Received 834 bytes from GPS:[0m
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,01,,,21*7A
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,01,,,21*7A
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,01,,,17*7F
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,â…JiÇj
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (10494) BME280: Temperature: 24.63[0m
+[0;32mI (10494) BME280: Humidity: 39.90[0m
+[0;32mI (10504) BME280: Pressure: 986.78[0m
+[0;32mI (10504) MPU6050: MPU Temperature: 25.66[0m
+[0;32mI (10504) MPU6LM“[0m
+çç}·: 0.34	acc_y: 1.07	acc_z: 0.22
+[0;32mI (10514) MPU6050: gyro_x: -42.09	gyro_y: -4.50	gyro_z: -22.87[0m
+[0;32mI (10524) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (10604) LORA: PACKET SENT SUCCESSFULLY![0m
+[0;32mI (10604) ACCELERATION after: X: 0.34  Y: 1.07  Z: 0.22[0m
+[0;32mI (10604) ACCELERATION: 3D ACCELERATION!!!!: 0.069876[0m
+re...
+[0;32mI (13904) BME280: Reading humidity...[0m
+[0;32mI (14204) BME280: Reading temperature...[0m
+[0;32mI (14504) BME280: bme2080_h: 0x3ffb5bdc[0m
+[0;32mI (14754) GPS: Received 648 bytes from GPS:[0m
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (14824) BME280: Temperature: 24.73[0m
+[0;32mI (14824) BME280: Humidity: 40.03[0m
+[0;32mI (14834) BME280: Pressure: 986.74[0m
+[0;32mI (14834) MPU6050: MPU Temperature: 25.57[0m
+[0;32mI (14834) MPU6050: acc_x: -0.18	acc_y: 0.11	acc_z: 0.26[0m
+[0;32mI (14844) MPU6050: gyro_x: 11.89	gyro_y: 10.96	gyro_z: 88.21[0m
+[0;32mI (14844) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (14934) LORA: PACKET SENT SUCCESSFULLY![0m
+[0;32mI (14934) ACCELERATION after: X: -0.17  Y: 0.11  Z: 0.26[0m
+[0;32mI (14934) ACCELERATION: 3D ACCELERATION!!!!: 0.020369[0m
+[0;32mI (18234) BME280: Reading pressure...[0m
+[0;32mI (18234) BME280: Reading humidity...[0m
+[0;32mI (18534) BME280: Reading temperature...[0m
+[0;32mI (18834) BME280: bme2080_h: 0x3ffb5bdc[0m
+[0;32mI (19084) GPS: Received 656 bytes from GPS:[0m
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,02,,,22*7A
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (19154) BME280: Temperature: 24.89[0m
+[0;32mI (19154) BME280: Humidity: 38.48[0m
+[0;32mI (19164) BME280: Pressure: 986.74[0m
+[0;32mI (19164) MPU6050: MPU Temperature: 25.71[0m
+[0;32mI (19164) MPU6050: acc_x: 0.15	acc_y: 1.00	acc_z: -0.36[0m
+[0;32mI (19174) MPU6050: gyro_x: 39.76	gyro_y: 32.43	gyro_z: 2.98[0m
+[0;32mI (19174) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (19264) LORA: PACKET SENT SUCCESSFULLY![0m
+[0;32mI (19264) ACCELERATION after: X: 0.15  Y: 1.00  Z: -0.36[0m
+[0;32mI (19264) ACCELERATION: 3D ACCELERATION!!!!: 0.065600[0m
+[0;32mI (22564) BME280: Reading pressure...[0m
+[0;32mI (22564) BME280: Reading humidity...[0m
+[0;32mI (22864) BME280: Reading temperature...[0m
+[0;32mI (23164) BME280: bme2080_h: 0x3ffb5bdc[0m
+s from GPS:
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (23504) BME280: Temperature: 24.92[0m
+[0;32mI (23504) BME280: Humidity: 38.75[0m
+[0;32mI (23514) BME280: Pressure: 986.69[0m
+[0;32mI (23514) MPU6050: MPU Temperature: 25.85[0m
+[0;32mI (23514) MPU6050: acc_x: 0.32	acc_y: 0.77	acc_z: 0.06[0m
+[0;32mI (23524) MPU6050: gyro_x: -60.47	gyro_y: -5.15	gyro_z: -83.08[0m
+[0;32mI (23524) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (23614) LORA: PACKET SENT SUCC after: X: 0.32  Y: 0.77  Z: 0.06[0m
+[0;32mI (23614) ACCELERATION: 3D ACCELERATION!!!!: 0.051065[0m
+[0;32mI (26914) BME280: Reading pressure...[0m
+[0;32mI (26914) BME280: Reading humidity...[0m
+[0;32mI (27214) BME280: Reading temperature...[0m
+[0;32mI (27514) BME280: bme2080_h: 0x3ffb5bdc[0m
+[0;32mI (27764) GPS: Received 672 bytes from GPS:[0m
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,03,,,22*7B
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,02,,,20*78
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,02,,,18*73
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (27834) BME280: Temperature: 25.02[0m
+[0;32mI (27834) BME280: Humidity: 39.31[0m
+[0;32mI (27844) BME280: Pressure: 986.71[0m
+[0;32mI (27844) MPU6050: MPU Temperature: 25.80[0m
+[0;32mI (27844) MPU6050: acc_x: 0.12	acc_y: 0.99	acc_z: -0.04[0m
+[0;32mI (27854) MPU6050: gyro_x: -0.40	gyro_y: 13.22	gyro_z: 19.37[0m
+[0;32mI (27854) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (27944) LORA: PACKET SENT SUCCESSFULLY![0m
+[0;32mI (27944) ACCELERATION after: X: 0.12  Y: 0.99  Z: -0.04[0m
+[0;32mI (27944) ACCELERATION: 3D ACCELERATION!!!!: 0.060727[0m
+re...
+[0;32mI (31244) BME280: Reading humidity...[0m
+[0;32mI (31544) BME280: Reading temperature...[0m
+[0;32mI (31844) BME280: bme2080_h: 0x3ffb5bdc[0m
+[0;32mI (32094) GPS: Received 656 bytes from GPS:[0m
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,01,04,,,28*76
+NMEA line: $GPGLL,,,,,,V,N*64
+NMEA line: $GPRMC,,V,,,,,,,,,,N*53
+NMEA line: $GPVTG,,,,,,,,,N*30
+NMEA line: $GPGGA,,,,,,0,00,99.99,,,,,,*48
+NMEA line: $GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30
+NMEA line: $GPGSV,1,1,00*79
+NMEA line: $GPGLL,,,,,,V,N*64
+[0;32mI (32164) BME280: Temperature: 25.02[0m
+[0;32mI (32164) BME280: Humidity: 37.92[0m
+[0;32mI (32174) BME280: Pressure: 986.74[0m
+[0;32mI (32174) MPU6050: MPU Temperature: 25.85[0m
+[0;32mI (32174) MPU6050: acc_x: 0.24	acc_y: 0.90	acc_z: -0.18[0m
+[0;32mI (32184) MPU6050: gyro_x: -1.91	gyro_y: -1.13	gyro_z: -1.15[0m
+[0;32mI (32184) GPS: GPS_LON: nan	GPS_LAT: nan	GPS_ALT: 0.000000[0m
+[0;32mI (32274) LORA: PACKET SENT SUCCESSFULLY![0m
+[0;32mI (32274) ACCELERATION after: X: 0.24  Y: 0.90  Z: -0.17[0m
+[0;32mI (32274) ACCELERATION: 3D ACCELERATION!!!!: 0.057735[0m

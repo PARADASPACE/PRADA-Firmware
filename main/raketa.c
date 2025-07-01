@@ -309,7 +309,6 @@ while(true){
 	//int sf = lora_get_spreading_factor();
 	ESP_LOGI(pcTaskGetName(NULL), "spreading_factor=%d", sf);
 
-
     xTaskCreate(&taskTx, "TX", 2048*3, &handles, 5, NULL);
 #endif
 }
@@ -469,7 +468,7 @@ void taskTx(void *pvParameters){
     lora_enable_crc();
     lora_set_tx_power(17);            // Set max transmit power
     while (1) {
-        const char *message = "posilam !";
+        **const char *message = "posilam !";
         printf("📤 Sending: %s\n", message);
 
         lora_send_packet((uint8_t *)message, strlen(message));
@@ -487,15 +486,17 @@ void taskTx(void *pvParameters){
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
         }
-        /*vTaskDelay(pdMS_TO_TICKS(2000));
+        /*
+        vTaskDelay(pdMS_TO_TICKS(2000));
         gpio_set_level(EJECT_PIN, 1);
         vTaskDelay(pdMS_TO_TICKS(2000));
         gpio_set_level(EJECT_PIN, 0);
         */
+
         if(isHigh(&packet_tx) == 1){
             eject_parachute();
         }
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
     ESP_LOGI(loraTag, "Transmit end");
@@ -643,6 +644,16 @@ void eject_parachute(){
 
 // why did i make it static
 static int isHigh(const sensor_packet_t *packet){
+#define ACCEL_SCALE_FACTOR 16384.0f  // for ±2g setting
+float ax = packet->acce_x / ACCEL_SCALE_FACTOR;
+float ay = packet->acce_y / ACCEL_SCALE_FACTOR;
+float az = packet->acce_z / ACCEL_SCALE_FACTOR;
+
+float sumacce = sqrtf(ax * ax + ay * ay + az * az);
+
+    ESP_LOGI("ACCELERATION after", "X: %.2f  Y: %.2f  Z: %.2f", (float)packet->acce_x/1000, (float)packet->acce_y/1000,(float)packet->acce_z/1000);
+    ESP_LOGI("ACCELERATION","3D ACCELERATION!!!!: %f", sumacce);
+    /*
     if(launched == 0){
         launched = sqrtf(packet->acce_x*packet->acce_x
                 + packet->acce_y*packet->acce_y
@@ -653,13 +664,13 @@ static int isHigh(const sensor_packet_t *packet){
         if(packet->pressure_hPax10 < lastMin){
             return 1;
         }
-        /* ----
         // dalsi case otestovat gps reliability a zajistit,
         // aby buffer overflow nezpusobil nekontrolovany ejection
-        ----*/
         lastMin = packet->pressure_hPax10;
         return 0;
     }
+    */
+
     return 0;
 }
 
