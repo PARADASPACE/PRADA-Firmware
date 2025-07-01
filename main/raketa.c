@@ -1,4 +1,5 @@
 /* pins in use */
+#include "unity_test_runner.h"
 #define SDA_PIN 21
 #define SCL_PIN 22
 #define SCK_PIN 0
@@ -49,6 +50,7 @@
 #include "driver/uart.h"
 #include "hal/uart_types.h"
 #include "i2c_bus.h"
+#include "math.h"
 
 
 /* @Errors */
@@ -229,7 +231,16 @@ static const char* ejectionTag ="EJECTION";
 
 // <-------------------------------------------------------------------------->
 /* @Ejection condition */
-static int isHigh();
+static int isHigh(const sensor_packet_t *packet);
+
+// threshold needs to be configured!!!
+const float threshold = 1.5f;
+
+// alpha serves as a low-pass filter
+const float alpha = 0.8f;
+
+int launched = 0;
+static float lastMin=0;
 // <-------------------------------------------------------------------------->
 
 #define lora_tx
@@ -296,6 +307,8 @@ while(true){
 	//lora_set_spreading_factor(CONFIG_SF_RATE);
 	//int sf = lora_get_spreading_factor();
 	ESP_LOGI(pcTaskGetName(NULL), "spreading_factor=%d", sf);
+
+
     xTaskCreate(&taskTx, "TX", 2048*3, &handles, 5, NULL);
 #endif
 }
@@ -474,6 +487,9 @@ void taskTx(void *pvParameters){
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
         }
+        if(isHigh(&packet_tx) == 1){
+            eject_parachute();
+        }
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 
@@ -620,3 +636,26 @@ void eject_parachute(){
     gpio_set_level(EJECT_PIN, 1);
     ESP_LOGI(ejectionTag," ejection charge activated!!!");
 }
+
+// why did i make it static
+static int isHigh(const sensor_packet_t *packet){
+    if(launched == 0){
+        launched = sqrtf(packet->acce_x*packet->acce_x
+                + packet->acce_y*packet->acce_y
+                + packet->acce_z*packet->acce_z) >= threshold ? 1 : 0;
+    }
+    else{
+        // tohle je jenom napad musim upravit jeste
+        if(packet->pressure_hPax10 < lastMin){
+            return 1;
+        }
+        /* ----
+        // dalsi case otestovat gps reliability a zajistit,
+        // aby buffer overflow nezpusobil nekontrolovany ejection
+        ----*/
+        lastMin = packet->pressure_hPax10;
+        return 0;
+    }
+    return 0;
+}
+
