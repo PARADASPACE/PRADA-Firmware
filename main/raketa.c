@@ -32,6 +32,51 @@
 // It's purpose is to measure and provide
 // useful data and emulate real life scenarios.
 
+// --> Pošli svoje jméno do vesmíru <--
+/* Viktorie Králová, Jakub Talián, Jiří Posavád, Robin Třeštík, Novos, Šimon, Matěj Šproch, Simona Rybářová,
+ * Laura Žurovcová Josef Mičan, Eliška zápalková Tereza Staníková, Ellen Slívová, veronika scheyer, Sebastian Sačarovský, Pikolová Aneta, Julie Pustějovská, Julie Pustějovská,
+ * Martin Molnár, vojtěch pustka, Kevin Trinh, Izabella Estera Lenczyková, Oliver Solčán, Kubina Vojtěch, Vojtěch Koliba, Daniel Ostárek,
+ * alexander Vasak, Tadeáš Zbytek, Samuel Timčo, Štěpán Rotter, Adam zboch, Maryčka Popkova, Ema Pravdová, Božetěch Rak,
+ * Matouš Zbytek, Oleksandr Sosonnyj , Sandra Bartonová, David Bednář, Xaver Buš, Adriana Jedličková, Laura Bilá, Chaewon Kim,
+ * Ferdinand Cyrus, Klárka Černotíková, Klimánek Vít, Melanie Knapova, Nicolas Bilý, Sara Krejčí, Marek Tulej, Patrik Holeček,
+ * Erik Krumpolc, Terka Šubertova, Michal Holinka, Jakub Hrstka, Ondřej Zlenko, Myslikovjan Marcus, Šimon Motloch, Ella Šiler,
+ * Suchánek Dominik, Šimon Szotkowski, Pipi, Peter Norski, Majush Igam, Pepa Kolovrátek, Kvido Fišnar, Jan Chalupa,
+ * Jonáš Kopřiva, Martin Kačer, Stefanie Šilarová, Alex Nevrkla, Klaudie Paseková, Marianna Pavlová, Michal Richter, Vít Morčinko,
+ * Vojtěch Vývoda, Alena Šerá, Lukáš Hanzelka, Jakub Jastrezmbski, Emma Kovaříková, Vanesa Husárová, Daniel Zagóra, Adéla Horáková,
+ * Lukáš Hanzelka, Vanesa Parišková, Daniel Jašek, Leontýna Hudcová, Vanessa Zahradníková, Veronika Klepáčová, Martin Vaverka, Adéla Havlíková,
+ * Jitka Havlíková, Dana Holubová, Pravda Samuel, Honza Toman, Ctirad Obid , Michal Hrtoň, Nikola Veselá, Mariana Kuchařová, Barbora Kučerová,
+ * Kopřivová Sofie Anna, Radim Strejček, Catherine Smith, Vojtěch Šafář, Kamila Baďurová, Fionn kilduff, Liubov Nikolenko , Velička jakub,
+ * Roman Farkavec, Lukáš Hardyn, Lucie Špačková, Tomáš Zagóra, David Oprštěný, Veronika Jílková, Vilém Matějka, Dominika Nováková,
+ * Dana Kaločová, Agáta Hanusová, Julie Ertlová, tereza havlikova, Eliška Řezníčková, Stella Gorková, Šarlota Jelínková, Mirek Řeha,
+ * Adéla Bielčiková, Ondřej Jagoš, Jan Chlebek, Filip Kresta, Jakub Oborný, Dominik Hajdušek, Matěj Brychta, Daniil Zhulavskyi,
+ * Filip Strašák, Jakub Gardoš, Michal Bury, Vladyslav Moskvin, Karin Witalová, Jakub Maďa, Petr Heczko, Matěj Martynek,
+ * Šimon Diba, Darina Šuhajová, Jiří Sumbal, Simon Píštěk, Robin Balon, Libor Janouškovec, Martin Slaný, Vít Gelnar ,
+ * Jindřich Měrka, Antonín Hyvnar, Marika Kačerová, Max Janda, Kristina Kupčíková, Vivien Švehlíková, Richard Vývoda, Jakub Zelenka,
+ * Jindřich Weiss, Michaela Polanská, Isabela Rosová, Maruška Jandová, Johanna Palacká, Tadeáš Michálek, Maksym Ponomarov, Eva Lošáková,
+ * Nela Sudková, Adéla Petrášová, Adéla Syrková, Ema Žáčková, Zuzana Řezníčková, Jačová Laura, tomáš Bajnar, Nikola Charlotte Rossi,
+ * Pavel Alexa, Samoilenko Diana , Klaudie Skálová , Vojtěch Staňa, Tomáš Pivko, Daniel Jelič, Marie Natálie Kurucová, Ondřej Verner,
+ * Šimon Ryba, Adéla Oprštěná, Kryštof Švehla, Anna Kološová, Veronika Kočvarová, Eva Žouželková, Lucie Koudelková, Eva Vylíčil Hradilová ,
+ * Samuel Zajac, Aneta Dušková , Jakub Sedláček , Petra Hanáková , Jindřich Randa , Eliška Novotná , Karolína Jakubíková, Minka Kocsis,
+ * Samko a pocitkovia, Vít Tech Holoubek , Erika Deanková, Stela Šaršonová, Martina Klvačová, Anna Koutná, Oravagamer, Martin Dryák,
+ * Jonáš Neruda, Vojtěch Koukal, Mikuláš Kraj, Klára Dostálová, Patrícia Slivková, Roman Petružela, Julie Klímová, Valerie Lipková,
+ * Karolína Kulová, Matyáš Černý, Andrea Marie Krocová, Bronislava Jandačková, Ellenka Smékalová, Julie Beritová, Tereza Jelínková, Peter Štefánik,
+ * Marek Sotolář, Klára Drzewianá, Viola Pavlíková, Matěj Přibyl , Štěpán Pavlík, Matěj Sikora, Adéla Steinerová , Prokop Havlík,
+ * Anna Revendová, Hana Macurová, Richard Břenek, Aleš Chrobok, Marek Klimonda, Jakub Látal, Veronika Bačová , Kristina Kirichenko,
+ * Petr Fojtík, Martin Šerý, Lucie Koptíková, Ondřej Polka, Kalantajevskij Maksim, Ondra Charenza, Nela Hošková, Markéta Kadelová,
+ * Sebastian Vojta, Damián Chalupa, Tomáš Komáčka, Štěpán Chalupa, Lucie Holotíková, Silvie Šimíčková, Adam Bezděk, Laura Pastrňáková,
+ * Eliška Matějková, Jen Friedrich, Matyáš Eichner, Daniel Tužinský, Simona vyvialova, Jakub veelbil, Kristína Zimová, Jakub Gurecký,
+ * Adam Přívara, Matyas Skacel, Adam Stýskal, Matěj Frydrych, Dominik Szkandera, Lina Mikulíková, Zbyněk Nytra, Karolína Sedláčková,
+ * Adam Otáhal,Tobiáš Pitter, Matěj Gotzman , Tonda Kučera, Albert Bouchal, Alexandr Chovanec, Adam Fiala, Valerie Nitrová,
+ * Milan Filgas, sarfad smrdi, Lenka Madryová, Jakub Chalupa, Vojtěch Brchaň, Teodor Fojtík, Jakub Turoň, Maxim Masare,
+ * Marek Malčík, Daniel Tomis, Darina Šuhajová, Adam Hrtoň, Jonáš Hammer, Lukáš Gavel, Zuzana Bouchalová, Pavlína Smilkovska,
+ * Martin Vošický, Samuel Hauer, Milan Kadeřábek, Vobecký Adam, Martin Pospíšil, Matěj Šimek, Jan Santarius, Simon Dobeš,
+ * Anežka Kubenková, Silvie Říčanová, Lukas Sagan, Roman Kubaczka, Kateřina Nieslaníková, Bombardinokrokodilo, Tomáš Szczotka, Mikeš Kocour,
+ * Ondrej Kazimir, Jakub Olszar, Tomáš Polok, Adam Kondrela, Eliška Janovská, Krystof Klecek, Tereza Marečková, Eliška Pohlová,
+ * Jitka Roubalová, Mafynfv, Filip Zajacz, Matěj kusák, Filip Martinák, Mates Horák, Michael Mazur, Patrik Fiksek ,
+ * Vojtěch Průcha, Adam Chemij, Elisabeth, Vontroba Max, Pavel Brutovsky, Vojtěch Ptáček, Michal Fadieiev, Valušek Michal,
+ * Ottilie Kadeřábkováá, Tomáš Závodný, Hyvnar Samuel, Petr Maléř, David Michal Fencik, Emmanuel Ezeanyika, Vojtěch Dryák, Eva Dvořáková,
+ * Veronika Seibertová, Natálie Klepáčová, Zuzana Honusová, Beáta Dryáková, Klára Huková , Jakub Holub, Jakub Farník, Daniel Kozel */
+
 
 #include "hal/spi_types.h"
 #define LOG_MODULES 1
