@@ -10,7 +10,7 @@
 
 #define GPS_TX_PIN 13
 
-#define EJECT_PIN 3
+#define EJECT_PIN 18
 /*
                                                                        ███
                                                                       ███
@@ -230,6 +230,7 @@ static const char* ejectionTag ="EJECTION";
 
 #define lora_tx
 void app_main(void){
+    gpio_reset_pin(EJECT_PIN);
     gpio_set_direction(EJECT_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(EJECT_PIN, 0);
     // @SYS INIT
@@ -383,7 +384,6 @@ void updateBME(bme280_handle_t bme2080_h, bme_structure_t* bme){
     GLOBAL_ERROR = STATUS_OK;
     esp_err_t err;
     vTaskDelay(milliseconds(300));
-
     ESP_LOGI(bmeTag, "Reading pressure...");
     err = bme280_read_pressure(bme2080_h, &bme->pressure);
     if(err != ESP_OK)
@@ -412,7 +412,6 @@ void updateBME(bme280_handle_t bme2080_h, bme_structure_t* bme){
 
 }
 // <--------------------------------------------------------------------------->
-
 
 
 
@@ -463,6 +462,7 @@ void taskTx(void *pvParameters){
         vTaskDelay(pdMS_TO_TICKS(2000)); // wait 2 seconds
     }*/
     while(1) {
+
         //ESP_LOGI(loraTag, "bme handle at TX loop: %p", handles->bme280_h);
         sensor_packet_t packet_tx = build_sensor_packet(handles->bme280_h, handles->mpu6050_h);
         lora_send_packet((uint8_t* )&packet_tx,
@@ -472,7 +472,10 @@ void taskTx(void *pvParameters){
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
         }
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        gpio_set_level(EJECT_PIN, 1);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        gpio_set_level(EJECT_PIN, 0);
     }
 
     ESP_LOGI(loraTag, "Transmit end");
@@ -562,7 +565,6 @@ sensor_packet_t build_sensor_packet(
     ESP_LOGI(bmeTag, "Temperature: %.2f", bme_s.temperature);
     ESP_LOGI(bmeTag, "Humidity: %.2f", bme_s.humidity);
     ESP_LOGI(bmeTag, "Pressure: %.2f", bme_s.pressure);
-
     ESP_LOGI(mpuTag, "MPU Temperature: %.2f",mpu_s.temperature.temp);
     ESP_LOGI(mpuTag, "acc_x: %.2f\tacc_y: %.2f\tacc_z: %.2f",
             mpu_s.acceleration.acce_x,
