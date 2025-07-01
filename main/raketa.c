@@ -227,6 +227,10 @@ static const char* ejectionTag ="EJECTION";
 // <-------------------------------------------------------------------------->
 
 
+// <-------------------------------------------------------------------------->
+/* @Ejection condition */
+static int isHigh();
+// <-------------------------------------------------------------------------->
 
 #define lora_tx
 void app_main(void){
@@ -353,8 +357,6 @@ void systemInitializaton(modules_handle_t* handles){
     checkStatus();
     GLOBAL_ERROR = STATUS_OK;
 }
-
-
 
 
 
