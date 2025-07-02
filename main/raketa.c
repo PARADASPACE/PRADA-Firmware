@@ -75,7 +75,7 @@
  * Jitka Roubalová, Mafynfv, Filip Zajacz, Matěj kusák, Filip Martinák, Mates Horák, Michael Mazur, Patrik Fiksek ,
  * Vojtěch Průcha, Adam Chemij, Elisabeth, Vontroba Max, Pavel Brutovsky, Vojtěch Ptáček, Michal Fadieiev, Valušek Michal,
  * Ottilie Kadeřábkováá, Tomáš Závodný, Hyvnar Samuel, Petr Maléř, David Michal Fencik, Emmanuel Ezeanyika, Vojtěch Dryák, Eva Dvořáková,
- * Veronika Seibertová, Natálie Klepáčová, Zuzana Honusová, Beáta Dryáková, Klára Huková , Jakub Holub, Jakub Farník, Daniel Kozel */
+ * Veronika Seibertová, Natálie Klepáčová, Zuzana Honusová, Beáta Dryáková, Klára Huková , Jakub Holub, Jakub Farník, Daniel Kozel, Filip Kresta */
 
 
 #include "hal/spi_types.h"
@@ -531,7 +531,7 @@ void taskTx(void *pvParameters){
         if (lost != 0) {
             ESP_LOGW(loraTag, "%d packets lost", lost);
         }
-        /*
+        /* ejection charge is working no need to keep this code in here idk why
         vTaskDelay(pdMS_TO_TICKS(2000));
         gpio_set_level(EJECT_PIN, 1);
         vTaskDelay(pdMS_TO_TICKS(2000));
@@ -542,6 +542,7 @@ void taskTx(void *pvParameters){
             eject_parachute();
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
+
     }
 
     ESP_LOGI(loraTag, "Transmit end");
@@ -685,37 +686,44 @@ void checkStatus(){
 void eject_parachute(){
     gpio_set_level(EJECT_PIN, 1);
     ESP_LOGI(ejectionTag," ejection charge activated!!!");
+    vTaskDelay(milliseconds(500));
+    gpio_set_level(EJECT_PIN, 0);
 }
 
 // why did i make it static
-static int isHigh(const sensor_packet_t *packet){
-#define ACCEL_SCALE_FACTOR 16384.0f  // for ±2g setting
-float ax = packet->acce_x / ACCEL_SCALE_FACTOR;
-float ay = packet->acce_y / ACCEL_SCALE_FACTOR;
-float az = packet->acce_z / ACCEL_SCALE_FACTOR;
+static int isFalling(const sensor_packet_t *packet) {
+    #define ACCEL_SCALE_FACTOR 16384.0f  // ±2g range
+    static float last_pressure = 0;
+    static int falling_confirmed = 0;
 
-float sumacce = sqrtf(ax * ax + ay * ay + az * az);
+    // convert raw to g
+    float ax = packet->acce_x / ACCEL_SCALE_FACTOR;
+    float ay = packet->acce_y / ACCEL_SCALE_FACTOR;
+    float az = packet->acce_z / ACCEL_SCALE_FACTOR;
 
-    ESP_LOGI("ACCELERATION after", "X: %.2f  Y: %.2f  Z: %.2f", (float)packet->acce_x/1000, (float)packet->acce_y/1000,(float)packet->acce_z/1000);
-    ESP_LOGI("ACCELERATION","3D ACCELERATION!!!!: %f", sumacce);
-    /*
-    if(launched == 0){
-        launched = sqrtf(packet->acce_x*packet->acce_x
-                + packet->acce_y*packet->acce_y
-                + packet->acce_z*packet->acce_z) >= threshold ? 1 : 0;
-    }
-    else{
-        // tohle je jenom napad musim upravit jeste
-        if(packet->pressure_hPax10 < lastMin){
-            return 1;
-        }
-        // dalsi case otestovat gps reliability a zajistit,
-        // aby buffer overflow nezpusobil nekontrolovany ejection
-        lastMin = packet->pressure_hPax10;
+    // acc mag
+    float acc_mag = sqrtf(ax * ax + ay * ay + az * az);
+
+    // from 10xhpa to hpa
+    float pressure_hPa = packet->pressure_hPax10 / 10.0f;
+
+    ESP_LOGI("FALL_CHECK", "Pressure: %.2f hPa, Acc Mag: %.2f g", pressure_hPa, acc_mag);
+
+    if (last_pressure == 0) {
+        last_pressure = pressure_hPa;
         return 0;
     }
-    */
 
-    return 0;
+    // if pressure increases (faloling)
+    float pressure_change = pressure_hPa - last_pressure;
+    last_pressure = pressure_hPa;
+
+    // if detected pressure incr ease and \acc drop that free faling
+    if (pressure_change > 0.3f && acc_mag < 0.3f) {
+        ESP_LOGW("FALL_DETECTED", "Rocket is falling! ΔP=%.2f hPa, acc=%.2f g", pressure_change, acc_mag);
+        falling_confirmed = 1;
+    }
+
+    return falling_confirmed;
 }
 
