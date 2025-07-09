@@ -686,44 +686,61 @@ void checkStatus(){
 void eject_parachute(){
     gpio_set_level(EJECT_PIN, 1);
     ESP_LOGI(ejectionTag," ejection charge activated!!!");
-    vTaskDelay(milliseconds(500));
-    gpio_set_level(EJECT_PIN, 0);
 }
+#include "esp_timer.h"
 
-// why did i make it static
-static int isFalling(const sensor_packet_t *packet) {
-    #define ACCEL_SCALE_FACTOR 16384.0f  // ±2g range
+static int isHigh(const sensor_packet_t *packet) {
+    #define ACCEL_SCALE_FACTOR 16384.0f
+    #define LAUNCH_ACCEL_THRESHOLD 0.4f   // g-force threshold for launch detection
+    #define CHUTE_DEPLOY_DELAY_MS 13000
+
+    // muzu prosim domu prosim prosim
     static float last_pressure = 0;
     static int falling_confirmed = 0;
 
-    // convert raw to g
+    static int launch_detected = 0;
+    static int chute_ready = 0;
+    static int64_t launch_time = 0;
+
+    // blah blh blah nerd
     float ax = packet->acce_x / ACCEL_SCALE_FACTOR;
     float ay = packet->acce_y / ACCEL_SCALE_FACTOR;
     float az = packet->acce_z / ACCEL_SCALE_FACTOR;
 
-    // acc mag
     float acc_mag = sqrtf(ax * ax + ay * ay + az * az);
-
-    // from 10xhpa to hpa
     float pressure_hPa = packet->pressure_hPax10 / 10.0f;
 
     ESP_LOGI("FALL_CHECK", "Pressure: %.2f hPa, Acc Mag: %.2f g", pressure_hPa, acc_mag);
+
+    // uz nemuzu asi se na to vyseru a jdu spat
+    if (!launch_detected && acc_mag > LAUNCH_ACCEL_THRESHOLD) {
+        launch_detected = 1;
+        launch_time = esp_timer_get_time(); // microseconds
+        ESP_LOGW("LAUNCH_DETECTED", "raketovy obed detekovan! Acc=%.2f g", acc_mag);
+    }
+
+    if (launch_detected && !chute_ready) {
+        int64_t now = esp_timer_get_time();
+        if ((now - launch_time) >= CHUTE_DEPLOY_DELAY_MS * 1000) {
+            chute_ready = 1;
+            ESP_LOGW("CHUTE_DEPLOY_READY", "zapinam po 13s padak");
+        }
+    }
 
     if (last_pressure == 0) {
         last_pressure = pressure_hPa;
         return 0;
     }
 
-    // if pressure increases (faloling)
     float pressure_change = pressure_hPa - last_pressure;
     last_pressure = pressure_hPa;
 
-    // if detected pressure incr ease and \acc drop that free faling
-    if (pressure_change > 0.3f && acc_mag < 0.3f) {
-        ESP_LOGW("FALL_DETECTED", "Rocket is falling! ΔP=%.2f hPa, acc=%.2f g", pressure_change, acc_mag);
+    // jestli to nepujde tak se poseru na miste prisaham
+    if (pressure_change > 0.4f && acc_mag < 0.3f) {
+        ESP_LOGW("FALL_DETECTED", "raketka pada! ΔP=%.2f hPa, acc=%.2f g", pressure_change, acc_mag);
         falling_confirmed = 1;
     }
 
-    return falling_confirmed;
+    return chute_ready;
 }
 
